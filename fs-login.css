@@ -20,6 +20,32 @@
     background-color: var(--bg-light);
 }
 
+
+
+.main-wrapper {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    z-index: 1;
+}
+
+.input-group-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.custom-select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ececec;
+    border-radius: 2px;
+    background: white;
+    appearance: none;
+    cursor: pointer;
+}
+
 .login-container {
     flex: 1;
     display: flex;
@@ -55,12 +81,12 @@
 .logo-section h1 {
     font-size: 1.4rem;
     margin-bottom: 30px;
-    color: var(--primary-orange);
+    color: var(--success-green);
     letter-spacing: 0.5px;
 }
 
 .logo-section h1 span {
-    color: var(--success-green);
+    color: var(--primary-orange);
 }
 
 .tabs {
@@ -184,6 +210,16 @@ input {
 }
 
 .icon-circle:hover {
+    border-color: var(--success-green); 
+    background-color: rgba(40, 167, 69, 0.05); 
+}
+
+.icon-circle:hover img {
+    opacity: 1;
+    filter: invert(48%) sepia(79%) saturate(417%) hue-rotate(86deg) brightness(95%) contrast(89%);
+}
+
+.icon-circle:hover {
     background-color: #f8f9fa;
     border-color: var(--primary-orange); 
     transform: translateY(-3px); 
@@ -232,6 +268,24 @@ input {
     font-size: 12px;
     color: #888;
     background: white;
+}
+
+.form-footer {
+    margin-top: 25px; 
+    font-size: 13px;
+    color: var(--text-muted); 
+}
+
+.form-footer .red-link {
+    font-weight: 600; 
+    text-decoration: none;
+    border-bottom: 1px solid transparent; 
+    transition: all 0.3s ease;
+}
+
+.form-footer .red-link:hover {
+    color: var(--success-green); 
+    border-bottom: 1px solid var(--success-green);
 }
 
 .footer-links a {
