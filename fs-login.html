@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIREstarter | Login</title>
+    <title>FIREstarter | Login & Register</title>
     <link rel="stylesheet" href="fs-login.css">
 </head>
 <body>
@@ -17,8 +17,8 @@
                 </div>
 
                 <div class="tabs">
-                    <button class="tab-btn active">Login</button>
-                    <button class="tab-btn">Create Account</button>
+                    <button class="tab-btn active" onclick="showForm('login')">Login</button>
+                    <button class="tab-btn" onclick="showForm('register')">Create Account</button>
                 </div>
 
                 <form id="loginForm">
@@ -35,8 +35,26 @@
                     <button type="submit" class="main-btn">LOGIN</button>
                 </form>
 
-                <div class="form-footer">
-                    <a href="#" class="red-link">Create my account</a>
+                <form id="registerForm" class="auth-form" style="display: none;">
+                    <div class="input-group-row">
+                        <input type="text" placeholder="First Name*" required>
+                        <input type="text" placeholder="Last Name*" required>
+                    </div>
+                    <div class="input-group">
+                        <input type="email" placeholder="Email Address*" required>
+                    </div>
+                    <div class="input-group password-group">
+                        <input type="password" id="regPass" placeholder="Password*" required>
+                        <div class="password-icon" onclick="togglePass('regPass', 'eyeIcon2')">
+                            <img src="./icons/eye.svg" alt="Show" id="eyeIcon2">
+                        </div>
+                    </div>
+                
+                    <button type="submit" class="main-btn">Create Account</button>
+                </form>
+
+                <div id="formFooter" class="form-footer">
+                    <a href="#" class="red-link" onclick="showForm('register')">Create my account</a>
                     <span class="divider">or</span>
                     <a href="#" class="red-link">Forgot password</a>
                 </div>
