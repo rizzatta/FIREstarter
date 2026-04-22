@@ -179,6 +179,21 @@ input {
     font-size: 12px;
 }
 
+.icon-circle {
+    transition: all 0.3s ease; 
+}
+
+.icon-circle:hover {
+    background-color: #f8f9fa;
+    border-color: var(--primary-orange); 
+    transform: translateY(-3px); 
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.icon-circle:hover img {
+    opacity: 1; /
+}
+
 .icons {
     display: flex;
     justify-content: center;
