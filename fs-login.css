@@ -123,6 +123,38 @@ input {
     background-color: var(--success-green);
 }
 
+.password-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-group input {
+    padding-right: 45px; 
+}
+
+.password-icon {
+    position: absolute;
+    right: 12px;
+    width: 22px; 
+    height: 22px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.password-icon:hover {
+    opacity: 1;
+}
+
+.password-icon img {
+    width: 100%;
+    height: auto;
+}
+
 .red-link {
     color: var(--primary-orange);
     text-decoration: none;
