@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="fs-login.css">
 </head>
 <body>
+    <div class="bg-overlay"></div>
     <div class="main-wrapper">
         <div class="login-container">
             <div class="login-card">
@@ -24,6 +25,7 @@
                 <form id="loginForm">
                     <div class="input-group">
                         <input type="text" id="username" placeholder="Email / Phone*" required>
+                        <span id="loginEmailError" class="error-message">Invalid email format</span>
                     </div>
                     <div class="input-group password-group">
                         <input type="password" id="password" placeholder="Password*" required>
@@ -35,23 +37,27 @@
                     <button type="submit" class="main-btn">LOGIN</button>
                 </form>
 
-                <form id="registerForm" class="auth-form" style="display: none;">
-                    <div class="input-group-row">
-                        <input type="text" placeholder="First Name*" required>
-                        <input type="text" placeholder="Last Name*" required>
+              <form id="registerForm" class="auth-form" style="display: none;" novalidate>
+                 <div class="input-group-row">
+                    <input type="text" placeholder="First Name*" required>
+                    <input type="text" placeholder="Last Name*" required>
+                </div>
+                <div class="input-group">
+                    <input type="email" id="regEmail" placeholder="Email Address*" required>
+                    <span id="regEmailError" class="error-message">Invalid email format</span>
+                </div>
+                <div class="input-group password-group">
+                    <input type="password" id="regPass" placeholder="Password*" required>
+                    <div class="password-icon" onclick="togglePass('regPass', 'eyeIcon2')">
+                        <img src="./icons/eye.svg" alt="Show" id="eyeIcon2">
                     </div>
-                    <div class="input-group">
-                        <input type="email" placeholder="Email Address*" required>
-                    </div>
-                    <div class="input-group password-group">
-                        <input type="password" id="regPass" placeholder="Password*" required>
-                        <div class="password-icon" onclick="togglePass('regPass', 'eyeIcon2')">
-                            <img src="./icons/eye.svg" alt="Show" id="eyeIcon2">
-                        </div>
-                    </div>
-                
-                    <button type="submit" class="main-btn">Create Account</button>
-                </form>
+                </div>
+
+                <button type="submit" class="main-btn">Create Account</button>
+            </form>
+
+                <form id="loginForm" novalidate>
+                 </form>
 
                 <div id="formFooter" class="form-footer">
                     <a href="#" class="red-link" onclick="showForm('register')">Create my account</a>
@@ -74,16 +80,16 @@
                 </div>
 
                 <p class="terms-text">
-                    By proceeding, you agree to our <a href="#">Terms of FIREstarter Account</a> and <a href="#">Terms of Service</a>. To find out more about privacy practice, see our <a href="#">Privacy Notice</a>.
+                    By proceeding, you agree to our <a href="ToA-fs.html">Terms of FIREstarter Account</a> and <a href="ToS.html">Terms of Service</a>. To find out more about privacy practice, see our <a href="privacy-notice.html">Privacy Notice</a>.
                 </p>
             </div>
         </div>
 
         <footer class="page-footer">
             <div class="footer-links">
-                <a href="#">Terms & Conditions</a>
-                <a href="#">Terms of FIREstarter account</a>
-                <a href="#">Privacy Notice</a>
+                <a href="ToS.html">Terms & Conditions</a>
+                <a href="ToA-fs.html">Terms of FIREstarter account</a>
+                <a href="privacy-notice.html">Privacy Notice</a>
             </div>
             <div class="copyright">
                 Copyright © 2026 FIREstarter. All Rights Reserved.
