@@ -140,6 +140,19 @@ input {
     outline: none;
 }
 
+.error-message {
+    color: #ff4d4d; 
+    font-size: 11px;
+    margin-top: 4px;
+    display: none; 
+    text-align: left;
+    width: 100%;
+}
+
+input.invalid {
+    border-color: #ff4d4d !important;
+}
+
 .toggle-pass {
     position: absolute;
     right: 12px;
@@ -159,10 +172,26 @@ input {
     margin-top: 15px;
     cursor: pointer;
     transition: 0.3s ease;
+     cursor: not-allowed;
 }
 
 .main-btn:hover {
     background-color: var(--success-green);
+}
+
+.main-btn.active {
+    background-color: var(--success-green);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
+}
+
+.error-message {
+    color: #d52b1e;
+    font-size: 11px;
+    margin-top: -10px;
+    margin-bottom: 10px;
+    display: none; 
 }
 
 .password-group {
