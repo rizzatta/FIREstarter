@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIREstarter | Onboarding</title>
+    <link rel="stylesheet" href="fs-onboarding.css">
+</head>
+<body>
+    <div class="onboarding-container">
+    <div class="progress-bar"><div id="progress"></div></div>
+    
+    <form id="onboardingForm">
+        <div class="form-step active" id="step1">
+            <h3>Let's get to know you.</h3>
+            <input type="number" id="age" placeholder="How old are you?" required>
+            <button type="button" onclick="nextStep(2)">Next</button>
+        </div>
+
+        <div class="form-step" id="step2" style="display:none;">
+            <h3>Your Financials</h3>
+            <input type="number" id="salary" placeholder="Annual Salary (PHP)" required>
+            <input type="number" id="dependents" placeholder="Number of dependents" required>
+            <button type="button" onclick="nextStep(1)">Back</button>
+            <button type="button" onclick="nextStep(3)">Next</button>
+        </div>
+
+        <div class="form-step" id="step3" style="display:none;">
+            <h3>Choose your FIRE Path</h3>
+            <select id="firePlan">
+                <option value="lean">Lean FIRE (Minimalist)</option>
+                <option value="fat">Fat FIRE (Luxury)</option>
+                <option value="coast">Coast FIRE (Early semi-retirement)</option>
+            </select>
+            <button type="button" onclick="nextStep(2)">Back</button>
+            <button type="submit">Finalize My Plan</button>
+        </div>
+    </form>
+</div>
+</html>
