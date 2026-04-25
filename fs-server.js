@@ -63,3 +63,49 @@ app.post('/api/login', async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 });
+
+// Onboarding Transaction
+app.post('/api/finalize-onboarding', async (req, res) => {
+    const { userId, age, salary, dependents, firePlan } = req.body;
+    
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN'); 
+
+        const profileQuery = `
+            INSERT INTO user_profiles (user_id, age, salary, dependents, fire_plan)
+            VALUES ($1, $2, $3, $4, $5)
+        `;
+        await client.query(profileQuery, [userId, age, salary, dependents, firePlan]);
+
+        await client.query('COMMIT'); 
+        res.status(200).json({ message: "Profile complete!" });
+    } catch (err) {
+        await client.query('ROLLBACK'); 
+        res.status(500).json({ error: "Onboarding failed" });
+    } finally {
+        client.release();
+    }
+});
+
+// FIRE Multiplier
+app.post('/api/save-onboarding', async (req, res) => {
+    const { userId, age, retireAge, savings, expenses, sRate, rRate, fireType } = req.body;
+    
+    const multipliers = { lean: 20, standard: 25, fat: 30 };
+    const multiplier = multipliers[fireType] || 25;
+
+    try {
+        await pool.query(
+            `UPDATE user_profiles SET 
+             age = $1, target_retirement_age = $2, current_savings = $3, 
+             annual_expenses = $4, savings_rate = $5, investment_return_rate = $6, 
+             fire_multiplier = $7 
+             WHERE user_id = $8`,
+            [age, retireAge, savings, expenses, sRate, rRate, multiplier, userId]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Database error" });
+    }
+});
