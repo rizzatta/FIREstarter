@@ -107,7 +107,7 @@ loginForm.addEventListener('submit', async (e) => {
         });
 
         if (response.ok) {
-            window.location.href = "fs-dashboard.html"; 
+            window.location.href = "fs-onboarding.html"; 
         } else {
             const result = await response.json();
             alert(result.error); 
