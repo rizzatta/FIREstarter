@@ -7,33 +7,71 @@
     <link rel="stylesheet" href="fs-onboarding.css">
 </head>
 <body>
-    <div class="onboarding-container">
-    <div class="progress-bar"><div id="progress"></div></div>
     
-    <form id="onboardingForm">
-        <div class="form-step active" id="step1">
-            <h3>Let's get to know you.</h3>
-            <input type="number" id="age" placeholder="How old are you?" required>
-            <button type="button" onclick="nextStep(2)">Next</button>
-        </div>
+<div class="fire-onboarding">
+    <div class="progress-container">
+        <div id="progressBar" class="progress-bar"></div>
+    </div>
 
-        <div class="form-step" id="step2" style="display:none;">
-            <h3>Your Financials</h3>
-            <input type="number" id="salary" placeholder="Annual Salary (PHP)" required>
-            <input type="number" id="dependents" placeholder="Number of dependents" required>
-            <button type="button" onclick="nextStep(1)">Back</button>
-            <button type="button" onclick="nextStep(3)">Next</button>
+    <form id="fireOnboardingForm">
+    <div class="step active" id="step1">
+        <h2><span class="glitch">01</span> Timeline</h2>
+        <div class="input-group">
+            <input type="number" id="currentAge" placeholder="Current Age" min="1" max="120" required>
+            <p class="input-tip">Knowing your current age helps us calculate your compounding window.</p>
         </div>
+        <div class="input-group">
+            <input type="number" id="targetRetireAge" placeholder="Target Retirement Age" min="18" required>
+            <p class="input-tip">Most FIRE seekers aim for 35–50, but choose what feels right for your legacy.</p>
+        </div>
+        <button type="button" class="next-btn" onclick="next(2)">CONTINUE</button>
+    </div>
 
-        <div class="form-step" id="step3" style="display:none;">
-            <h3>Choose your FIRE Path</h3>
-            <select id="firePlan">
-                <option value="lean">Lean FIRE (Minimalist)</option>
-                <option value="fat">Fat FIRE (Luxury)</option>
-                <option value="coast">Coast FIRE (Early semi-retirement)</option>
-            </select>
-            <button type="button" onclick="nextStep(2)">Back</button>
-            <button type="submit">Finalize My Plan</button>
+    <script src="fs-onboarding.js"></script>
+
+    <div class="step" id="step2" style="display:none;">
+        <h2><span class="glitch">02</span> Capital</h2>
+        <div class="input-group">
+            <input type="number" id="currentSavings" placeholder="Current Savings/Investments (₱)" min="0" required>
+            <p class="input-tip">Include cash, stocks, and crypto. This is your starting "Archive" balance.</p>
+        </div>
+        <div class="input-group">
+            <input type="number" id="annualExpenses" placeholder="Annual Expenses (₱)" min="0" required>
+            <p class="input-tip">This is the most important number. It determines your final FIRE target.</p>
+        </div>
+        <button type="button" class="next-btn" onclick="next(3)">ANALYZE</button>
+    </div>
+
+    <div class="step" id="step3" style="display:none;">
+        <h2><span class="glitch">03</span> Growth</h2>
+        <div class="input-group">
+            <input type="number" id="savingsRate" placeholder="Monthly Savings Rate (%)" min="0" max="100" required>
+            <p class="input-tip">The percentage of your income you "lock away" every month.</p>
+        </div>
+        <div class="input-group">
+            <input type="number" id="returnRate" placeholder="Expected Return (%)" min="0" required>
+            <p class="input-tip">Most stock portfolios aim for 7-10% annually.</p>
+        </div>
+        <button type="button" class="next-btn" onclick="next(4)">STRATEGIZE</button>
+    </div>
+
+        <div class="step" id="step4" style="display:none;">
+            <h2><span class="glitch">04</span> Select FIRE Protocol</h2>
+            <div class="fire-options">
+                <label class="fire-card">
+                    <input type="radio" name="fireType" value="lean" checked>
+                    <span><b>Lean FIRE</b> (Minimalist - 20x Expenses)</span>
+                </label>
+                <label class="fire-card">
+                    <input type="radio" name="fireType" value="standard">
+                    <span><b>Standard FIRE</b> (Balanced - 25x Expenses)</span>
+                </label>
+                <label class="fire-card">
+                    <input type="radio" name="fireType" value="fat">
+                    <span><b>Fat FIRE</b> (Luxury - 30x Expenses)</span>
+                </label>
+            </div>
+            <button type="submit" class="finalize-btn">INITIALIZE ARCHIVE</button>
         </div>
     </form>
 </div>
