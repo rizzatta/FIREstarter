@@ -7,72 +7,87 @@
     <link rel="stylesheet" href="fs-onboarding.css">
 </head>
 <body>
-    
-<div class="fire-onboarding">
-    <div class="progress-container">
-        <div id="progressBar" class="progress-bar"></div>
-    </div>
+    <header class="top-header">
+        <div class="green-stripe"></div>
+        <div class="logo-container">
+            <img src="./icons/fs-logo.png" alt="FIREstarter Logo" class="header-logo">
+            <span class="logo-text">FIRE<span>starter</span></span>
+        </div>
+    </header>
 
-    <form id="fireOnboardingForm">
-    <div class="step active" id="step1">
-        <h2><span class="glitch">01</span> Timeline</h2>
-        <div class="input-group">
-            <input type="number" id="currentAge" placeholder="Current Age" min="1" max="120" required>
-            <p class="input-tip">Knowing your current age helps us calculate your compounding window.</p>
+    <div class="fire-onboarding">
+        <div class="progress-container">
+            <div id="progressBar" class="progress-bar"></div>
         </div>
-        <div class="input-group">
-            <input type="number" id="targetRetireAge" placeholder="Target Retirement Age" min="18" required>
-            <p class="input-tip">Most FIRE seekers aim for 35–50, but choose what feels right for your legacy.</p>
-        </div>
-        <button type="button" class="next-btn" onclick="next(2)">CONTINUE</button>
+
+        <form id="fireOnboardingForm">
+            <div class="step active" id="step1">
+                <h2><span class="glitch">01</span> Profile</h2>
+                <div class="input-group">
+                    <input type="text" id="username" placeholder="Pick a unique username" required>
+                    <p class="input-tip">This is how you'll be identified in the FIREstarter archives.</p>
+                </div>
+                <div class="input-group">
+                    <input type="number" id="currentAge" placeholder="Current Age" min="1" max="120" required>
+                    <p class="input-tip">Helps us calculate your compounding window accurately.</p>
+                </div>
+                <div class="input-group">
+                    <input type="number" id="targetRetireAge" placeholder="Target Retirement Age" min="18" required>
+                    <p class="input-tip">Most seekers aim for 35–50, but choose your own legacy age.</p>
+                </div>
+                <button type="button" class="next-btn" onclick="next(2)">CONTINUE</button>
+            </div>
+
+            <div class="step" id="step2" style="display:none;">
+                <h2><span class="glitch">02</span> Capital</h2>
+                <div class="input-group">
+                    <input type="number" id="currentSavings" placeholder="Current Savings/Investments (₱)" min="0" required>
+                    <p class="input-tip">Include cash, stocks, and crypto. This is your starting "Archive" balance.</p>
+                </div>
+                <div class="input-group">
+                    <input type="number" id="annualExpenses" placeholder="Annual Expenses (₱)" min="0" required>
+                    <p class="input-tip">This is the most critical number. It determines your final FIRE target.</p>
+                </div>
+                <button type="button" class="next-btn" onclick="next(1)">BACK</button>
+                <button type="button" class="next-btn" onclick="next(3)">ANALYZE</button>
+            </div>
+
+            <div class="step" id="step3" style="display:none;">
+                <h2><span class="glitch">03</span> Growth</h2>
+                <div class="input-group">
+                    <input type="number" id="savingsRate" placeholder="Monthly Savings Rate (%)" min="0" max="100" required>
+                    <p class="input-tip">The percentage of your monthly income you commit to locking away.</p>
+                </div>
+                <div class="input-group">
+                    <input type="number" id="returnRate" placeholder="Expected Return (%)" min="0" required>
+                    <p class="input-tip">A standard stock portfolio typically aims for 7–10% annually.</p>
+                </div>
+                <button type="button" class="next-btn" onclick="next(2)">BACK</button>
+                <button type="button" class="next-btn" onclick="next(4)">STRATEGIZE</button>
+            </div>
+
+            <div class="step" id="step4" style="display:none;">
+                <h2><span class="glitch">04</span> Select FIRE Protocol</h2>
+                <div class="fire-options">
+                    <label class="fire-card">
+                        <input type="radio" name="fireType" value="lean" checked>
+                        <span><b>Lean FIRE</b> (Minimalist - 20x Expenses)</span>
+                    </label>
+                    <label class="fire-card">
+                        <input type="radio" name="fireType" value="standard">
+                        <span><b>Standard FIRE</b> (Balanced - 25x Expenses)</span>
+                    </label>
+                    <label class="fire-card">
+                        <input type="radio" name="fireType" value="fat">
+                        <span><b>Fat FIRE</b> (Luxury - 30x Expenses)</span>
+                    </label>
+                </div>
+                <button type="button" class="next-btn" onclick="next(3)">BACK</button>
+                <button type="submit" class="finalize-btn">INITIALIZE ARCHIVE</button>
+            </div>
+        </form>
     </div>
 
     <script src="fs-onboarding.js"></script>
-
-    <div class="step" id="step2" style="display:none;">
-        <h2><span class="glitch">02</span> Capital</h2>
-        <div class="input-group">
-            <input type="number" id="currentSavings" placeholder="Current Savings/Investments (₱)" min="0" required>
-            <p class="input-tip">Include cash, stocks, and crypto. This is your starting "Archive" balance.</p>
-        </div>
-        <div class="input-group">
-            <input type="number" id="annualExpenses" placeholder="Annual Expenses (₱)" min="0" required>
-            <p class="input-tip">This is the most important number. It determines your final FIRE target.</p>
-        </div>
-        <button type="button" class="next-btn" onclick="next(3)">ANALYZE</button>
-    </div>
-
-    <div class="step" id="step3" style="display:none;">
-        <h2><span class="glitch">03</span> Growth</h2>
-        <div class="input-group">
-            <input type="number" id="savingsRate" placeholder="Monthly Savings Rate (%)" min="0" max="100" required>
-            <p class="input-tip">The percentage of your income you "lock away" every month.</p>
-        </div>
-        <div class="input-group">
-            <input type="number" id="returnRate" placeholder="Expected Return (%)" min="0" required>
-            <p class="input-tip">Most stock portfolios aim for 7-10% annually.</p>
-        </div>
-        <button type="button" class="next-btn" onclick="next(4)">STRATEGIZE</button>
-    </div>
-
-        <div class="step" id="step4" style="display:none;">
-            <h2><span class="glitch">04</span> Select FIRE Protocol</h2>
-            <div class="fire-options">
-                <label class="fire-card">
-                    <input type="radio" name="fireType" value="lean" checked>
-                    <span><b>Lean FIRE</b> (Minimalist - 20x Expenses)</span>
-                </label>
-                <label class="fire-card">
-                    <input type="radio" name="fireType" value="standard">
-                    <span><b>Standard FIRE</b> (Balanced - 25x Expenses)</span>
-                </label>
-                <label class="fire-card">
-                    <input type="radio" name="fireType" value="fat">
-                    <span><b>Fat FIRE</b> (Luxury - 30x Expenses)</span>
-                </label>
-            </div>
-            <button type="submit" class="finalize-btn">INITIALIZE ARCHIVE</button>
-        </div>
-    </form>
-</div>
+</body>
 </html>
