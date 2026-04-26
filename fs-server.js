@@ -66,6 +66,8 @@ app.post('/api/login', async (req, res) => {
 
 // Onboarding Transaction
 app.post('/api/finalize-onboarding', async (req, res) => {
+    const { userId, username, age, salary, dependents, firePlan } = req.body;
+
     const { userId, age, salary, dependents, firePlan } = req.body;
     
     const client = await pool.connect();
