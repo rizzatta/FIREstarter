@@ -1,7 +1,7 @@
 :root {
     --primary-orange: #FF8C00;
     --success-green: #28A745;
-    --bg-light: #f4f4f4;
+    --bg-light: #f8f9fa;
     --border-grey: #ececec;
     --text-muted: #999;
     --white: #ffffff;
@@ -16,6 +16,49 @@ body {
     align-items: center;
     min-height: 100vh;
     margin: 0;
+    background: radial-gradient(circle at top left, var(--white), var(--bg-light));
+}
+
+.top-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: var(--white);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    z-index: 1000;
+}
+
+.green-stripe {
+    height: 6px; 
+    background: linear-gradient(30deg, var(--success-green) 0%, var(--primary-orange) 100%);
+    width: 100%;
+}
+
+.logo-container {
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-logo {
+    height: 30px;
+    width: auto;
+}
+
+.logo-text {
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: var(--success-green);
+}
+
+.logo-text span {
+    color: var(--primary-orange);
+}
+
+.fire-onboarding {
+    margin-top: 80px;
 }
 
 .onboarding-container {
@@ -143,4 +186,25 @@ input:focus {
 
 .next-btn:active {
     transform: scale(0.98);
+}
+
+.button-group {
+    display: flex;
+    gap: 15px; 
+    margin-top: 25px;
+}
+
+.button-group .next-btn, 
+.button-group .finalize-btn {
+    flex: 1;
+    margin-bottom: 0; 
+}
+
+.btn-secondary {
+    background: var(--border-grey) !important;
+    color: var(--dark-text) !important;
+}
+
+.btn-secondary:hover {
+    background: #e0e0e0 !important;
 }
