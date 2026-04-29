@@ -1,7 +1,7 @@
 const loginForm = document.getElementById('loginForm');
 const registerForm = document.getElementById('registerForm');
 
-// TAB TOGGLE LOGIC
+// TAB TOGGLE 
 function showForm(type) {
     const footer = document.getElementById('formFooter');
     const tabs = document.querySelectorAll('.tab-btn');
@@ -59,7 +59,7 @@ function setupValidation(formId, emailInputId, errorId) {
     });
 }
 
-// Initialize Validation 
+// INITIALIZE VALIDATION
 setupValidation('loginForm', 'username', 'loginEmailError');
 setupValidation('registerForm', 'regEmail', 'regEmailError');
 
@@ -98,21 +98,40 @@ loginForm.addEventListener('submit', async (e) => {
         email: document.getElementById('username').value,
         password: document.getElementById('password').value
     };
-
     try {
         const response = await fetch('http://localhost:5000/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(loginData)
         });
-
-        if (response.ok) {
-            window.location.href = "fs-onboarding.html"; 
-        } else {
-            const result = await response.json();
-            alert(result.error); 
-        }
-    } catch (error) {
-        alert("Connection failed. Is the backend running?");
-    }
+        if (response.ok) window.location.href = "fs-onboarding.html";
+        else alert("Invalid Credentials");
+    } catch (err) { alert("Server is offline!"); }
 });
+
+// GOOGLE ICON CLICK LOGIN TRIGGER
+function triggerGoogleLogin() {
+    document.cookie = "g_state=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+    google.accounts.id.initialize({
+        client_id: "YOUR_GOOGLE_CLIENT_ID_HERE",
+        callback: handleCredentialResponse
+    });
+
+    google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed()) {
+            console.warn("Prompt stopped. Reason:", notification.getNotDisplayedReason());
+        }
+    });
+}
+
+// GOOGLE OAUTH SENDBACK
+function handleCredentialResponse(response) {
+    console.log("JWT Received");
+    fetch('http://localhost:5000/api/auth/google/callback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: response.credential })
+    })
+    .then(() => window.location.href = "fs-onboarding.html");
+}
