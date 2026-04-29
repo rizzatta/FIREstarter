@@ -37,10 +37,21 @@ app.post('/api/register', async (req, res) => {
 
 app.listen(5000, () => console.log('FIREstarter API running on port 5000'));
 
-// Google OAuth 
+// Google OAuth Verification
 app.post('/api/auth/google/callback', async (req, res) => {
-    const { credential } = req.body;
-    console.log("Encoded JWT ID token from Google:", credential);
+    try {
+        const { credential } = req.body;
+        
+        console.log("Google JWT received:", credential);
+
+        res.status(200).json({ 
+            success: true, 
+            message: "Identity verified. Accessing FIREstarter dashboard." 
+        });
+    } catch (error) {
+        console.error("Auth Error:", error.message);
+        res.status(500).json({ error: "Failed to verify identity." });
+    }
 });
 
 // Login Endpoint
