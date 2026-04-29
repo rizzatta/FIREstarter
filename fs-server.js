@@ -37,6 +37,12 @@ app.post('/api/register', async (req, res) => {
 
 app.listen(5000, () => console.log('FIREstarter API running on port 5000'));
 
+// Google OAuth 
+app.post('/api/auth/google/callback', async (req, res) => {
+    const { credential } = req.body;
+    console.log("Encoded JWT ID token from Google:", credential);
+});
+
 // Login Endpoint
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
@@ -64,26 +70,26 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// Onboarding Transaction
+// Onboarding Route
 app.post('/api/finalize-onboarding', async (req, res) => {
     const { userId, username, age, salary, dependents, firePlan } = req.body;
 
-    const { userId, age, salary, dependents, firePlan } = req.body;
-    
     const client = await pool.connect();
     try {
         await client.query('BEGIN'); 
 
         const profileQuery = `
-            INSERT INTO user_profiles (user_id, age, salary, dependents, fire_plan)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO user_profiles (user_id, username, age, salary, dependents, fire_plan)
+            VALUES ($1, $2, $3, $4, $5, $6)
         `;
-        await client.query(profileQuery, [userId, age, salary, dependents, firePlan]);
+
+        await client.query(profileQuery, [userId, username, age, salary, dependents, firePlan]);
 
         await client.query('COMMIT'); 
         res.status(200).json({ message: "Profile complete!" });
     } catch (err) {
         await client.query('ROLLBACK'); 
+        console.error("Archive Error:", err.message); 
         res.status(500).json({ error: "Onboarding failed" });
     } finally {
         client.release();
