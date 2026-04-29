@@ -178,7 +178,9 @@ input.invalid {
 }
 
 .main-btn:hover {
-    background-color: var(--success-green);
+    background-color: #218838; 
+    box-shadow: 0 6px 15px rgba(40, 167, 69, 0.4);
+    transform: translateY(-1px);
 }
 
 .main-btn.active {
