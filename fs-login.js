@@ -120,7 +120,8 @@ function triggerGoogleLogin() {
 
     google.accounts.id.prompt((notification) => {
         if (notification.isNotDisplayed()) {
-            console.warn("Prompt stopped. Reason:", notification.getNotDisplayedReason());
+            alert("Google Prompt Error: " + notification.getNotDisplayedReason());
+            console.error("Reason:", notification.getNotDisplayedReason());
         }
     });
 }
