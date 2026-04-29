@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FIREstarter | Login & Register</title>
     <link rel="stylesheet" href="fs-login.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
     <div class="bg-overlay"></div>
+    
     <div class="main-wrapper">
         <div class="login-container">
             <div class="login-card">
-
                 <div class="logo-section">
                     <img src="./icons/fs-logo.png" alt="FIREstarter Logo" class="main-logo">
                     <h1>FIRE<span>starter</span></h1>
@@ -29,39 +30,34 @@
                     </div>
                     <div class="input-group password-group">
                         <input type="password" id="password" placeholder="Password*" required>
-                        <div id="togglePassword" class="password-icon">
-                         <img src="./icons/eye.svg" alt="Show Password" id="eyeIcon">
+                        <div id="togglePassword" class="password-icon" onclick="togglePass('password', 'eyeIcon')">
+                            <img src="./icons/eye.svg" alt="Show Password" id="eyeIcon">
                         </div>
                     </div>
-                    
                     <button type="submit" class="main-btn">LOGIN</button>
                 </form>
 
-              <form id="registerForm" class="auth-form" style="display: none;" novalidate>
-                 <div class="input-group-row">
-                    <input type="text" placeholder="First Name*" required>
-                    <input type="text" placeholder="Last Name*" required>
-                </div>
-                <div class="input-group">
-                    <input type="email" id="regEmail" placeholder="Email Address*" required>
-                    <span id="regEmailError" class="error-message">Invalid email format</span>
-                </div>
-                <div class="input-group password-group">
-                    <input type="password" id="regPass" placeholder="Password*" required>
-                    <div class="password-icon" onclick="togglePass('regPass', 'eyeIcon2')">
-                        <img src="./icons/eye.svg" alt="Show" id="eyeIcon2">
+                <form id="registerForm" class="auth-form" style="display: none;" novalidate>
+                    <div class="input-group-row">
+                        <input type="text" placeholder="First Name*" required>
+                        <input type="text" placeholder="Last Name*" required>
                     </div>
-                </div>
-
-                <button type="submit" class="main-btn">Create Account</button>
-            </form>
-
-                <form id="loginForm" novalidate>
-                 </form>
+                    <div class="input-group">
+                        <input type="email" id="regEmail" placeholder="Email Address*" required>
+                        <span id="regEmailError" class="error-message">Invalid email format</span>
+                    </div>
+                    <div class="input-group password-group">
+                        <input type="password" id="regPass" placeholder="Password*" required>
+                        <div class="password-icon" onclick="togglePass('regPass', 'eyeIcon2')">
+                            <img src="./icons/eye.svg" alt="Show" id="eyeIcon2">
+                        </div>
+                    </div>
+                    <button type="submit" class="main-btn">Create Account</button>
+                </form>
 
                 <div id="formFooter" class="form-footer">
                     <a href="#" class="red-link" onclick="showForm('register')">Create my account</a>
-                    <span class="divider">or</span>
+                    <span class="divider"> or </span>
                     <a href="#" class="red-link">Forgot password</a>
                 </div>
 
@@ -70,17 +66,22 @@
                         <span>Other login methods</span>
                     </div>
                     <div class="icons">
-                        <div class="icon-circle">
+                        <div class="icon-circle" onclick="alert('Facebook coming soon')">
                             <img src="./icons/facebook-icon.svg" alt="Facebook Login">
                         </div>
-                        <div class="icon-circle">
+                        <div class="icon-circle" id="customGoogleBtn" onclick="triggerGoogleLogin()">
                             <img src="./icons/google-icon.svg" alt="Google Login">
+                        </div>
+                        <div id="g_id_onload"
+                            data-client_id="YOUR_GOOGLE_CLIENT_ID_HERE"
+                            data-callback="handleCredentialResponse"
+                            data-auto_prompt="false">
                         </div>
                     </div>
                 </div>
 
                 <p class="terms-text">
-                    By proceeding, you agree to our <a href="ToA-fs.html">Terms of FIREstarter Account</a> and <a href="ToS.html">Terms of Service</a>. To find out more about privacy practice, see our <a href="privacy-notice.html">Privacy Notice</a>.
+                    By proceeding, you agree to our <a href="ToA-fs.html">Terms</a> and <a href="ToS.html">Service</a>.
                 </p>
             </div>
         </div>
@@ -94,8 +95,8 @@
             <div class="copyright">
                 Copyright © 2026 FIREstarter. All Rights Reserved.
             </div>
-            <script src="fs-login.js"></script>
         </footer>
     </div>
+    <script src="fs-login.js"></script>
 </body>
 </html>
