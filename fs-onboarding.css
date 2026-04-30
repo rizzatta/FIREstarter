@@ -189,15 +189,23 @@ input:focus {
 }
 
 .button-group {
-    display: flex;
-    gap: 15px; 
-    margin-top: 25px;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 20px !important;
+    margin-top: 35px;
+    width: 100%;
 }
 
 .button-group .next-btn, 
 .button-group .finalize-btn {
-    flex: 1;
+    flex: 1;                 
+    width: auto !important;  
     margin-bottom: 0; 
+    padding: 16px;
+    height: 55px;            
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .btn-secondary {
