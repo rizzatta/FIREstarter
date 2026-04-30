@@ -98,15 +98,26 @@ loginForm.addEventListener('submit', async (e) => {
         email: document.getElementById('username').value,
         password: document.getElementById('password').value
     };
+    
     try {
         const response = await fetch('http://localhost:5000/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(loginData)
         });
-        if (response.ok) window.location.href = "fs-onboarding.html";
-        else alert("Invalid Credentials");
-    } catch (err) { alert("Server is offline!"); }
+
+        if (response.ok) {
+            const data = await response.json(); 
+            
+            localStorage.setItem('activeUserId', data.userId);
+            
+            window.location.href = "fs-onboarding.html";
+        } else {
+            alert("Invalid Credentials");
+        }
+    } catch (err) { 
+        alert("Server is offline!"); 
+    }
 });
 
 // GOOGLE ICON CLICK LOGIN TRIGGER
