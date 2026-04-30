@@ -57,29 +57,23 @@ app.post('/api/auth/google/callback', async (req, res) => {
 // Login Endpoint
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
-
     try {
         const user = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
-
-        if (user.rows.length === 0) {
-            return res.status(401).json({ error: "Invalid email or password" });
-        }
+        if (user.rows.length === 0) return res.status(401).json({ error: "Invalid credentials" });
 
         const validPassword = await bcrypt.compare(password, user.rows[0].password_hash);
-
-        if (!validPassword) {
-            return res.status(401).json({ error: "Invalid email or password." });
-        }
+        if (!validPassword) return res.status(401).json({ error: "Invalid credentials" });
 
         res.status(200).json({ 
             message: "Login Successful", 
-            user: user.rows[0].first_name 
+            userId: user.rows[0].user_id, 
+            userName: user.rows[0].first_name 
         });
-
     } catch (err) {
         res.status(500).json({ error: "Server error" });
     }
 });
+
 
 // Onboarding Route
 app.post('/api/finalize-onboarding', async (req, res) => {
@@ -100,7 +94,7 @@ app.post('/api/finalize-onboarding', async (req, res) => {
         res.status(200).json({ message: "Profile complete!" });
     } catch (err) {
         await client.query('ROLLBACK'); 
-        console.error("Archive Error:", err.message); 
+        console.error("FIREstarter Error:", err.message); 
         res.status(500).json({ error: "Onboarding failed" });
     } finally {
         client.release();
@@ -109,22 +103,31 @@ app.post('/api/finalize-onboarding', async (req, res) => {
 
 // FIRE Multiplier
 app.post('/api/save-onboarding', async (req, res) => {
-    const { userId, age, retireAge, savings, expenses, sRate, rRate, fireType } = req.body;
+    const { userId, username, age, retireAge, savings, expenses, sRate, rRate, fireType } = req.body;
     
     const multipliers = { lean: 20, standard: 25, fat: 30 };
     const multiplier = multipliers[fireType] || 25;
 
     try {
-        await pool.query(
-            `UPDATE user_profiles SET 
-             age = $1, target_retirement_age = $2, current_savings = $3, 
-             annual_expenses = $4, savings_rate = $5, investment_return_rate = $6, 
-             fire_multiplier = $7 
-             WHERE user_id = $8`,
-            [age, retireAge, savings, expenses, sRate, rRate, multiplier, userId]
-        );
-        res.json({ success: true });
+        const query = `
+            INSERT INTO user_profiles (user_id, username, age, target_retirement_age, current_savings, annual_expenses, savings_rate, investment_return_rate, fire_multiplier)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            ON CONFLICT (user_id) 
+            DO UPDATE SET 
+                username = EXCLUDED.username,
+                age = EXCLUDED.age,
+                target_retirement_age = EXCLUDED.target_retirement_age,
+                current_savings = EXCLUDED.current_savings,
+                annual_expenses = EXCLUDED.annual_expenses,
+                savings_rate = EXCLUDED.savings_rate,
+                investment_return_rate = EXCLUDED.investment_return_rate,
+                fire_multiplier = EXCLUDED.fire_multiplier;
+        `;
+        
+        await pool.query(query, [userId, username, age, retireAge, savings, expenses, sRate, rRate, multiplier]);
+        res.json({ success: true, message: "FIREstarter synchronized." });
     } catch (err) {
+        console.error("Database Error:", err.message);
         res.status(500).json({ error: "Database error" });
     }
 });
