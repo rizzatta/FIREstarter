@@ -11,20 +11,19 @@ function showForm(type) {
         registerForm.style.display = 'none';
         tabs[0].classList.add('active');
         tabs[1].classList.remove('active');
-        footer.innerHTML = `
-            <a href="#" class="red-link" onclick="showForm('register')">Create my account</a>
-            <span class="divider">or</span>
-            <a href="#" class="red-link">Forgot password</a>`;
+        
+        footer.innerHTML = ""; 
     } else {
         loginForm.style.display = 'none';
         registerForm.style.display = 'block';
         tabs[0].classList.remove('active');
         tabs[1].classList.add('active');
+        
         footer.innerHTML = `
             <span>Already have an account? </span>
             <a href="#" class="red-link" onclick="showForm('login')">Login</a>`;
     }
-}
+}  
 
 // PASSWORD VISIBILITY TOGGLE
 function togglePass(inputId, iconId) {
@@ -107,16 +106,22 @@ loginForm.addEventListener('submit', async (e) => {
         });
 
         if (response.ok) {
-            const data = await response.json(); 
-            
+            const data = await response.json();
             localStorage.setItem('activeUserId', data.userId);
-            
-            window.location.href = "fs-onboarding.html";
+
+            const statusRes = await fetch(`http://localhost:5000/api/user-status/${data.userId}`);
+            const statusData = await statusRes.json();
+
+            if (statusData.onboardingComplete) {
+                window.location.href = "fs-dashboard.html"; 
+            } else {
+                window.location.href = "fs-onboarding.html"; 
+            }
         } else {
-            alert("Invalid Credentials");
+            alert("Login Failed: Wrong password. Check your credentials.");
         }
-    } catch (err) { 
-        alert("Server is offline!"); 
+    } catch (err) {
+        alert("Server is offline!");
     }
 });
 
