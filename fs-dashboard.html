@@ -4,60 +4,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FIREstarter | Dashboard</title>
-    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="fs-dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <header class="top-header">
         <div class="green-stripe"></div>
         <div class="logo-container">
-            <img src="./icons/fs-logo.png" alt="FIREstarter Logo" class="header-logo">
+            <img src="./icons/fs-logo.png" alt="Logo" class="header-logo">
             <span class="logo-text">FIRE<span>starter</span></span>
-            <div class="user-badge">
-                <span id="displayUsername">User_Files_01</span>
-                <div class="status-dot"></div>
-            </div>
+        </div>
+        <div class="user-nav">
+            <span id="navUsername">Archivist</span>
+            <button onclick="logout()" class="logout-btn">SECURE EXIT</button>
         </div>
     </header>
 
-    <div class="dashboard-wrapper">
-        <aside class="sidebar">
-            <nav>
-                <a href="#" class="nav-item active">Overview</a>
-                <a href="#" class="nav-item">Projections</a>
-                <a href="#" class="nav-item">Assets</a>
-                <a href="#" class="nav-item">Security Logs</a>
-            </nav>
-        </aside>
+    <main class="dashboard-grid">
+        <section class="stat-card highlight">
+            <h3>FIRE Target</h3>
+            <p class="big-num" id="fireTarget">₱0</p>
+            <span class="sub-text" id="fireTypeDisplay">Standard Protocol</span>
+        </section>
 
-        <main class="main-content">
-            <div class="welcome-banner">
-                <h1>Welcome back, <span id="welcomeName">Explorer</span>.</h1>
-                <p>Your FIRE Files was last updated: <span id="lastUpdate">2026-04-27</span></p>
+        <section class="stat-card">
+            <h3>Current Savings</h3>
+            <p class="big-num" id="currentSavings">₱0</p>
+            <div class="progress-bg"><div id="fireProgress" class="progress-fill"></div></div>
+        </section>
+
+        <section class="info-panel">
+            <h2>Archive Profile</h2>
+            <div class="details-list">
+                <div class="detail-item"><span>Current Age:</span> <b id="displayAge">-</b></div>
+                <div class="detail-item"><span>Target Retirement:</span> <b id="displayRetireAge">-</b></div>
+                <div class="detail-item"><span>Annual Expenses:</span> <b id="displayExpenses">-</b></div>
+                <div class="detail-item"><span>Monthly Savings Rate:</span> <b id="displaySavingsRate">-</b></div>
             </div>
+        </section>
 
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <h3>Net Worth</h3>
-                    <p class="value" id="netWorth">₱0.00</p>
-                </div>
-                <div class="metric-card success">
-                    <h3>FIRE Progress</h3>
-                    <p class="value" id="fireProgress">0%</p>
-                </div>
-                <div class="metric-card orange">
-                    <h3>Target Date</h3>
-                    <p class="value" id="targetDate">2045</p>
-                </div>
+        <section class="security-panel">
+            <h2>Security Status</h2>
+            <div class="status-indicator">
+                <div class="status-bit green"></div> <span>Database Synchronized</span>
             </div>
-
-            <div class="chart-container">
-                <div class="chart-placeholder">
-                    <p>Growth Visualization Loading...</p>
-                </div>
+            <div class="social-status">
+                <img src="./icons/google-icon.svg" class="social-ic" id="googleStatus" title="Google Linked">
+                <img src="./icons/facebook-icon.svg" class="social-ic grayscale" id="fbStatus" title="Facebook Not Linked">
             </div>
-        </main>
-    </div>
+        </section>
 
-    <script src="dashboard.js"></script>
+        <section class="chart-container">
+            <h2>Wealth Projection</h2>
+            <canvas id="growthChart"></canvas>
+        </section>
+    </main>
+
+    <script src="fs-dashboard.js"></script>
 </body>
 </html>
