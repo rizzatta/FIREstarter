@@ -18,19 +18,15 @@ const pool = new Pool({
 // Registration API Endpoint
 app.post('/api/register', async (req, res) => {
     const { firstName, lastName, email, password } = req.body;
-
     try {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
-
         const newUser = await pool.query(
             "INSERT INTO users (first_name, last_name, email, password_hash) VALUES ($1, $2, $3, $4) RETURNING *",
             [firstName, lastName, email, hashedPassword]
         );
-
         res.status(201).json({ message: "User Saved!", user: newUser.rows[0].email });
     } catch (err) {
-        console.error(err.message);
         res.status(500).json({ error: "Email already exists or server error." });
     }
 });
@@ -73,7 +69,6 @@ app.post('/api/login', async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 });
-
 
 // Onboarding Route
 app.post('/api/finalize-onboarding', async (req, res) => {
@@ -131,3 +126,38 @@ app.post('/api/save-onboarding', async (req, res) => {
         res.status(500).json({ error: "Database error" });
     }
 });
+
+// Profile Existence Checker 
+app.get('/api/user-status/:userId', async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const profile = await pool.query("SELECT * FROM user_profiles WHERE user_id = $1", [userId]);
+        res.json({ onboardingComplete: profile.rows.length > 0 });
+    } catch (err) {
+        res.status(500).json({ error: "Status check failed" });
+    }
+});
+
+// Save Onboarding Data
+app.post('/api/save-onboarding', async (req, res) => {
+    const { userId, username, age, retireAge, savings, expenses, sRate, rRate, fireType } = req.body;
+    const multipliers = { lean: 20, standard: 25, fat: 30 };
+    const multiplier = multipliers[fireType] || 25;
+    try {
+        const query = `
+            INSERT INTO user_profiles (user_id, username, age, target_retirement_age, current_savings, annual_expenses, savings_rate, investment_return_rate, fire_multiplier)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            ON CONFLICT (user_id) DO UPDATE SET 
+                username = EXCLUDED.username, age = EXCLUDED.age, target_retirement_age = EXCLUDED.target_retirement_age,
+                current_savings = EXCLUDED.current_savings, annual_expenses = EXCLUDED.annual_expenses,
+                savings_rate = EXCLUDED.savings_rate, investment_return_rate = EXCLUDED.investment_return_rate,
+                fire_multiplier = EXCLUDED.fire_multiplier;
+        `;
+        await pool.query(query, [userId, username, age, retireAge, savings, expenses, sRate, rRate, multiplier]);
+        res.json({ success: true, message: "Archive synchronized." });
+    } catch (err) {
+        res.status(500).json({ error: "Database error" });
+    }
+});
+
+app.listen(5000, () => console.log('FIREstarter API running on port 5000'));
