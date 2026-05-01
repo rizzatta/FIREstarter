@@ -25,12 +25,12 @@
 
                 <form id="loginForm">
                     <div class="input-group">
-                        <input type="text" id="username" placeholder="Email / Phone*" required>
+                        <input type="text" id="username" placeholder="Email Address*" required>
                         <span id="loginEmailError" class="error-message">Invalid email format</span>
                     </div>
                     <div class="input-group password-group">
                         <input type="password" id="password" placeholder="Password*" required>
-                        <div id="togglePassword" class="password-icon" onclick="togglePass('password', 'eyeIcon')">
+                        <div class="password-icon" onclick="togglePass('password', 'eyeIcon')">
                             <img src="./icons/eye.svg" alt="Show Password" id="eyeIcon">
                         </div>
                     </div>
@@ -57,8 +57,6 @@
 
                 <div id="formFooter" class="form-footer">
                     <a href="#" class="red-link" onclick="showForm('register')">Create my account</a>
-                    <span class="divider"> or </span>
-                    <a href="#" class="red-link">Forgot password</a>
                 </div>
 
                 <div class="social-login">
@@ -71,11 +69,6 @@
                         </div>
                         <div class="icon-circle" id="customGoogleBtn" onclick="triggerGoogleLogin()">
                             <img src="./icons/google-icon.svg" alt="Google Login">
-                        </div>
-                        <div id="g_id_onload"
-                            data-client_id="YOUR_GOOGLE_CLIENT_ID_HERE"
-                            data-callback="handleCredentialResponse"
-                            data-auto_prompt="false">
                         </div>
                     </div>
                 </div>
