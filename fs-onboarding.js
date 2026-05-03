@@ -1,65 +1,56 @@
-// Progressive Onboarding
-function next(stepNumber) {
-    const currentStep = document.querySelector('.step[style*="display: block"]') || document.getElementById('step1');
+// SHOW MONTHLY BREAKDOWN OF ANNUAL EXPENSES
+function updateMonthlyExpense() {
+    const annual = parseFloat(document.getElementById('annualExpenses').value) || 0;
+    const monthly = Math.round(annual / 12);
+    document.getElementById('monthlyExpenseNote').innerText = `₱${monthly.toLocaleString()} per month`;
+}
+
+// SHOW LIVE FIRE NUMBER PREVIEW
+function updateFIREPreview() {
+    const expenses = parseFloat(document.getElementById('annualExpenses').value) || 0;
+    const fireType = document.querySelector('input[name="fireType"]:checked').value;
+    const multiplier = fireType === 'lean' ? 20 : (fireType === 'fat' ? 30 : 25);
     
+    const fireNumber = expenses * multiplier;
+    document.getElementById('liveFIRENumber').innerText = `₱${fireNumber.toLocaleString()}`;
+}
+
+function next(stepNumber) {
+    const currentStep = document.querySelector('.step.active');
     const inputs = currentStep.querySelectorAll('input[required]');
     
     let allValid = true;
-    inputs.forEach(input => {
-        if (!input.checkValidity()) {
-            input.reportValidity(); 
-            allValid = false;
-        }
-    });
+    inputs.forEach(input => { if (!input.checkValidity()) { input.reportValidity(); allValid = false; } });
 
     if (allValid || stepNumber < parseInt(currentStep.id.replace('step', ''))) {
-        const steps = document.querySelectorAll('.step');
-        steps.forEach(step => step.style.display = 'none');
+        document.querySelectorAll('.step').forEach(s => { s.style.display = 'none'; s.classList.remove('active'); });
+        const target = document.getElementById('step' + stepNumber);
+        target.style.display = 'block';
+        target.classList.add('active');
 
-        const targetStep = document.getElementById('step' + stepNumber);
-        if (targetStep) targetStep.style.display = 'block';
-
-        const progressBar = document.getElementById('progressBar');
-        progressBar.style.width = (stepNumber / 4) * 100 + '%';
+        document.getElementById('progressBar').style.width = (stepNumber / 4) * 100 + '%';
+        if (stepNumber === 4) updateFIREPreview();
     }
 }
 
-// FIRE Number Optimization
-function calculateOptimization() {
-    const expenses = parseFloat(document.getElementById('annualExpenses').value);
-    const fireType = document.querySelector('input[name="fireType"]:checked').value;
-    
-    let multiplier = 25;
-    if (fireType === 'lean') multiplier = 20;
-    if (fireType === 'fat') multiplier = 30;
-
-    const fireNumber = expenses * multiplier;
-    console.log(`Optimized FIRE Target: ₱${fireNumber.toLocaleString()}`);
-    return { fireNumber, multiplier };
-}
-
-// Onboarding Form Data Checker
 document.getElementById('fireOnboardingForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-
-    const savedId = localStorage.getItem('activeUserId');
-
-    if (!savedId) {
-        alert("Session expired. Please log in again.");
-        window.location.href = "fs-login.html";
-        return;
-    }
+    const annualExpenses = parseFloat(document.getElementById('annualExpenses').value);
+    const savingsAmount = parseFloat(document.getElementById('savingsAmount').value);
+    
+    // CONVERT ₱ SAVINGS TO A RATE (%) FOR THE BACKEND DATABASE
+    const calculatedRate = ((savingsAmount * 12) / (annualExpenses + (savingsAmount * 12)) * 100).toFixed(1);
 
     const onboardingData = {
-        userId: savedId, 
+        userId: localStorage.getItem('activeUserId'),
         username: document.getElementById('username').value,
         age: document.getElementById('currentAge').value,
         retireAge: document.getElementById('targetRetireAge').value,
         savings: document.getElementById('currentSavings').value,
-        expenses: document.getElementById('annualExpenses').value,
-        sRate: document.getElementById('savingsRate').value,
+        expenses: annualExpenses,
+        sRate: calculatedRate,
         rRate: document.getElementById('returnRate').value,
-        fireType: document.querySelector('input[name=\"fireType\"]:checked').value
+        fireType: document.querySelector('input[name="fireType"]:checked').value
     };
 
     try {
@@ -69,14 +60,6 @@ document.getElementById('fireOnboardingForm').addEventListener('submit', async (
             body: JSON.stringify(onboardingData)
         });
 
-        if (response.ok) {
-            alert("FIREstarter Initialized Successfully!");
-            window.location.href = "fs-dashboard.html";
-        } else {
-            alert("Error saving your details. Please check the server.");
-        }
-    } catch (err) {
-        console.error("Connection Error:", err);
-        alert("Server is offline. Ensure 'node fs-server.js' is running.");
-    }
+        if (response.ok) window.location.href = "fs-dashboard.html";
+    } catch (err) { console.error("Error:", err); }
 });
