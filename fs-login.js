@@ -78,15 +78,18 @@ registerForm.addEventListener('submit', async (e) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
         });
+        
         const result = await response.json();
+        
         if (response.ok) {
-            alert("Success! Welcome to FIREstarter, " + result.user);
-            showForm('login'); 
+            localStorage.setItem('activeUserId', result.userId);
+            
+            window.location.href = "fs-onboarding.html"; 
         } else {
             alert("Error: " + result.error);
         }
     } catch (error) {
-        alert("Server is offline. Start node server.js!");
+        alert("Server is offline. Ensure 'node fs-server.js' is running.");
     }
 });
 
@@ -121,7 +124,7 @@ loginForm.addEventListener('submit', async (e) => {
             alert("Login Failed: Wrong password. Check your credentials.");
         }
     } catch (err) {
-        alert("Server is offline!");
+        alert("Server is offline.");
     }
 });
 
