@@ -16,26 +16,17 @@
     </header>
 
     <div class="main-content">
-        <div class="fire-onboarding">
+        <div class="onboarding-container">
             <div class="progress-container">
-                <div id="progressBar" class="progress-bar"></div>
+                <div id="progressBar"></div>
             </div>
 
             <form id="fireOnboardingForm">
                 <div class="step active" id="step1">
                     <h2><span class="glitch">01</span> Profile</h2>
-                    <div class="input-group">
-                        <input type="text" id="username" placeholder="Pick a unique username" required>
-                        <p class="input-tip">This is how you'll be identified in FIREstarter.</p>
-                    </div>
-                    <div class="input-group">
-                        <input type="number" id="currentAge" placeholder="Current Age" min="1" max="120" required>
-                        <p class="input-tip">Helps us calculate your compounding window.</p>
-                    </div>
-                    <div class="input-group">
-                        <input type="number" id="targetRetireAge" placeholder="Target Retirement Age" min="18" required>
-                        <p class="input-tip">The age you plan to stop working for money.</p>
-                    </div>
+                    <input type="text" id="username" placeholder="Pick a unique username" required>
+                    <input type="number" id="currentAge" placeholder="Current Age" min="1" max="120" required>
+                    <input type="number" id="targetRetireAge" placeholder="Target Retirement Age" min="18" required>
                     <div class="button-group">
                         <button type="button" class="next-btn" onclick="next(2)">CONTINUE</button>
                     </div>
@@ -43,13 +34,10 @@
 
                 <div class="step" id="step2" style="display:none;">
                     <h2><span class="glitch">02</span> Capital</h2>
+                    <input type="number" id="currentSavings" placeholder="Current Savings (₱)" min="0" required>
                     <div class="input-group">
-                        <input type="number" id="currentSavings" placeholder="Current Savings (₱)" min="0" required>
-                        <p class="input-tip">Include cash, stocks, and crypto investments.</p>
-                    </div>
-                    <div class="input-group">
-                        <input type="number" id="annualExpenses" placeholder="Annual Expenses (₱)" min="0" required>
-                        <p class="input-tip">The total you spend in a year to live comfortably.</p>
+                        <input type="number" id="annualExpenses" placeholder="Annual Expenses (₱)" min="0" oninput="updateMonthlyExpense()" required>
+                        <p id="monthlyExpenseNote" class="input-tip success-text">₱0 per month</p>
                     </div>
                     <div class="button-group">
                         <button type="button" class="next-btn btn-secondary" onclick="next(1)">BACK</button>
@@ -59,14 +47,9 @@
 
                 <div class="step" id="step3" style="display:none;">
                     <h2><span class="glitch">03</span> Growth</h2>
-                    <div class="input-group">
-                        <input type="number" id="savingsRate" placeholder="Monthly Savings Rate (%)" min="0" max="100" required>
-                        <p class="input-tip">Percentage of income you save each month.</p>
-                    </div>
-                    <div class="input-group">
-                        <input type="number" id="returnRate" placeholder="Expected Return (%)" min="0" required>
-                        <p class="input-tip">Target annual portfolio growth (Standard is 7–10%).</p>
-                    </div>
+                    <input type="number" id="savingsAmount" placeholder="Monthly Savings Amount (₱)" min="0" required>
+                    <input type="number" id="returnRate" placeholder="Expected Return (%)" min="0" required>
+                    <p class="input-tip">Philippine index funds typically return 8–10% annually.</p>
                     <div class="button-group">
                         <button type="button" class="next-btn btn-secondary" onclick="next(2)">BACK</button>
                         <button type="button" class="next-btn" onclick="next(4)">STRATEGIZE</button>
@@ -77,17 +60,20 @@
                     <h2><span class="glitch">04</span> Select FIRE Protocol</h2>
                     <div class="fire-options">
                         <label class="fire-card">
-                            <input type="radio" name="fireType" value="lean" checked>
-                            <span><b>Lean FIRE</b> (Minimalist - 20x Expenses)</span>
+                            <input type="radio" name="fireType" value="lean" onchange="updateFIREPreview()" checked>
+                            <span><b>Lean FIRE</b> (Simple Provincial Living - 20x)</span>
                         </label>
                         <label class="fire-card">
-                            <input type="radio" name="fireType" value="standard">
-                            <span><b>Standard FIRE</b> (Balanced - 25x Expenses)</span>
+                            <input type="radio" name="fireType" value="standard" onchange="updateFIREPreview()">
+                            <span><b>Standard FIRE</b> (Comfortable Metro Manila - 25x)</span>
                         </label>
                         <label class="fire-card">
-                            <input type="radio" name="fireType" value="fat">
-                            <span><b>Fat FIRE</b> (Luxury - 30x Expenses)</span>
+                            <input type="radio" name="fireType" value="fat" onchange="updateFIREPreview()">
+                            <span><b>Fat FIRE</b> (High-end BGC/Makati Luxury - 30x)</span>
                         </label>
+                    </div>
+                    <div class="fire-number-preview">
+                        Your FIRE Number: <span id="liveFIRENumber">₱0</span>
                     </div>
                     <div class="button-group">
                         <button type="button" class="next-btn btn-secondary" onclick="next(3)">BACK</button>
@@ -97,7 +83,6 @@
             </form>
         </div>
     </div>
-
     <script src="fs-onboarding.js"></script>
 </body>
 </html>
