@@ -21,11 +21,16 @@ app.post('/api/register', async (req, res) => {
     try {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
+        
         const newUser = await pool.query(
             "INSERT INTO users (first_name, last_name, email, password_hash) VALUES ($1, $2, $3, $4) RETURNING *",
             [firstName, lastName, email, hashedPassword]
         );
-        res.status(201).json({ message: "User Saved!", user: newUser.rows[0].email });
+
+        res.status(201).json({ 
+            user: newUser.rows[0].email,
+            userId: newUser.rows[0].user_id 
+        });
     } catch (err) {
         res.status(500).json({ error: "Email already exists." });
     }
