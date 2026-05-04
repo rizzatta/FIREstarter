@@ -1,3 +1,47 @@
+// Age Checker for Accurate Personalized FIRE Chart 
+function next(stepNumber) {
+    const currentStep = document.querySelector('.step.active');
+    const inputs = currentStep.querySelectorAll('input[required]');
+    
+    let allValid = true;
+    inputs.forEach(input => {
+        if (!input.checkValidity()) {
+            input.reportValidity();
+            allValid = false;
+        }
+    });
+
+    if (!allValid) return;
+
+    if (currentStep.id === 'step1' && stepNumber === 2) {
+        const age = parseInt(document.getElementById('currentAge').value);
+        const retireAge = parseInt(document.getElementById('targetRetireAge').value);
+
+        if (age <= 0) {
+            alert("Age must be a positive number.");
+            return;
+        }
+
+        if (age >= retireAge) {
+            alert("Your target retirement age must be older than your current age.");
+            return;
+        }
+    }
+
+    document.querySelectorAll('.step').forEach(s => { 
+        s.style.display = 'none'; 
+        s.classList.remove('active'); 
+    });
+    
+    const target = document.getElementById('step' + stepNumber);
+    target.style.display = 'block';
+    target.classList.add('active');
+
+    document.getElementById('progressBar').style.width = (stepNumber / 4) * 100 + '%';
+    
+    if (stepNumber === 4) updateFIREPreview();
+}
+
 // SHOW MONTHLY BREAKDOWN OF ANNUAL EXPENSES
 function updateMonthlyExpense() {
     const annual = parseFloat(document.getElementById('annualExpenses').value) || 0;
