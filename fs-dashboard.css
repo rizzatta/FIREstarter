@@ -182,6 +182,29 @@ h3 {
     font-size: 0.9rem;
 }
 
+.calculation-summary {
+    margin-top: 25px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    font-size: 0.9rem;
+    color: #495057;
+}
+
+.summary-line { margin-bottom: 5px; }
+
+.highlight-line {
+    margin-top: 10px;
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: #222;
+}
+
+.highlight-line span {
+    color: var(--primary-orange);
+}
+
 .card-header-row {
     display: flex;
     justify-content: space-between;
