@@ -9,15 +9,15 @@
 </head>
 <body>
     <header class="top-header">
-     <div class="logo-container">
+        <div class="logo-container">
             <img src="./icons/fs-logo.png" alt="Logo" class="header-logo">
             <span class="logo-text">FIRE<span>starter</span></span>
-     </div>
+        </div>
         <div class="user-actions">
             <button class="settings-btn" onclick="location.href='fs-settings.html'" title="Vault Settings">
                 <img src="./icons/settings.svg" alt="Settings" class="settings-icon">
             </button>
-            <button onclick="logout()" class="logout-btn">SECURE EXIT</button>
+            <button onclick="logout()" class="logout-btn">EXIT</button>
         </div>
     </header>
 
@@ -26,19 +26,20 @@
 
         <div class="stats-grid">
             <div class="stat-card orange-border">
-                <h3>FIRE Number</h3>
+                <h3>FIRE Target (Ideal)</h3>
                 <p class="big-num" id="fireTarget">₱0</p>
-                <span class="sub-text" id="fireTypeDisplay">Standard Protocol</span>
+                <span class="sub-text" id="fireTypeDisplay">Calculating Protocol...</span>
             </div>
             <div class="stat-card">
                 <h3>Current Net Worth</h3>
                 <p class="big-num" id="currentSavings">₱0</p>
                 <span class="sub-text" id="snapshotCount">0 snapshots recorded</span>
             </div>
-            <div class="stat-card">
-                <h3>Security Console</h3>
-                <div class="status-item"><span class="dot green"></span> Database synced</div>
-                <div class="status-item"><span class="dot green"></span> Session active</div>
+            <div class="stat-card strategy-card">
+                <h3>Current Strategy</h3>
+                <div class="param-item">Savings Rate: <b id="statSavingsRate">0%</b></div>
+                <div class="param-item">Expected Return: <b id="statReturn">0%</b></div>
+                <div class="param-item">Target SWR: <b id="statSWR">4%</b></div>
             </div>
         </div>
 
@@ -46,7 +47,7 @@
             <h3>Progress to FIRE</h3>
             <div class="progress-wrapper">
                 <div class="progress-bg"><div id="fireProgress" class="progress-fill"></div></div>
-                <span id="progressPct">0.0%</span>
+                <span id="progressPct" class="progress-pct">0.0%</span>
             </div>
             <div class="progress-labels">
                 <span>₱0</span>
@@ -55,41 +56,85 @@
         </section>
 
         <section class="wide-card">
-            <div class="card-header">
+            <div class="card-header-row">
                 <h3>Wealth Projection Graph</h3>
-                <span class="sub-text">Fixed Returns Retirement Model</span>
+                <div class="method-badges">
+                    <span class="badge active">Fixed Returns</span>
+                    <span class="badge disabled">Monte Carlo (TBA)</span>
+                </div>
             </div>
             <div class="chart-container">
                 <canvas id="growthChart"></canvas>
             </div>
-            <div id="chartCalculations" class="calculation-summary">
-                <p class="summary-line" id="savingsRateCalc"></p>
-                <p class="summary-line" id="fireTargetCalc"></p>
-                <p class="summary-line" id="returnRateCalc"></p>
-                <p class="highlight-line" id="retirementVerdict"></p>
+            <div id="chartCalculations" class="calculation-summary-modern">
+                <div class="calc-box">
+                    <span class="calc-label">Savings Velocity</span>
+                    <p id="savingsRateCalc">₱0/mo</p>
+                </div>
+                <div class="calc-box">
+                    <span class="calc-label">Archive Target</span>
+                    <p id="fireTargetCalc">₱0</p>
+                </div>
+                <div class="calc-box highlight">
+                    <span class="calc-label">Retirement Verdict</span>
+                    <p id="retirementVerdict">Scanning timeline...</p>
+                </div>
             </div>
         </section>
 
-        <section class="wide-card">
-            <div class="card-header">
-                <h3>Wealth Projection Graph</h3>
-                <span class="sub-text">Principal vs. Investment Growth</span>
+        <section class="wide-card calculator-panel">
+            <div class="card-header-row">
+                <h3>Live Strategy Adjuster</h3>
+                <button class="save-archive-btn" onclick="updateDatabase()">Sync to Archive</button>
             </div>
-            <div class="chart-container">
-                <canvas id="growthChart"></canvas>
+            <div class="calc-grid">
+                <div class="calc-group">
+                    <label>Monthly Income (₱)</label>
+                    <input type="number" id="liveIncome" oninput="liveUpdate()" value="50000">
+                </div>
+                <div class="calc-group">
+                    <label>Monthly Spending (₱)</label>
+                    <input type="number" id="liveSpending" oninput="liveUpdate()" value="30000">
+                </div>
+                <div class="calc-group">
+                    <label>Ideal Retire Spending (₱/yr)</label>
+                    <input type="number" id="liveRetireSpending" oninput="liveUpdate()" value="600000">
+                </div>
+                <div class="calc-group">
+                    <label>Expected Return (%)</label>
+                    <input type="number" id="liveReturn" step="0.1" oninput="liveUpdate()" value="8.0">
+                </div>
+                <div class="calc-group">
+                    <label>Safe Withdrawal Rate (%)</label>
+                    <input type="number" id="liveSWR" step="0.1" oninput="liveUpdate()" value="4.0">
+                </div>
+                <div class="calc-group">
+                    <label>Simulation Method</label>
+                    <select id="projectionMethod">
+                        <option value="fixed">Fixed Returns</option>
+                        <option value="monte-carlo" disabled>Monte Carlo (Locked)</option>
+                    </select>
+                </div>
             </div>
-            <div class="projection-footer">
-                Projected Net Worth at Age <span id="projAge">--</span>: <b id="projWorth">₱0</b>
-            </div>
+            <div id="liveVerdict" class="verdict-banner">Adjust sliders to see your freedom date.</div>
         </section>
 
         <section class="wide-card">
-            <div class="card-header">
-                <h3>Monthly Snapshots</h3>
-                <button class="add-btn" onclick="recordProgress()">+ Add Snapshot</button>
-            </div>
-            <div id="snapshotList" class="snapshot-list">
-                <p class="empty-msg">No snapshots recorded yet. Start recording your progress.</p>
+            <h3>Growth History (Salary & Logic)</h3>
+            <div class="table-container">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Monthly Income</th>
+                            <th>Exp. Return</th>
+                            <th>FIRE Target</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyLogBody">
+                    </tbody>
+                </table>
             </div>
         </section>
     </main>
