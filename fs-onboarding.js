@@ -77,23 +77,25 @@ function next(stepNumber) {
     }
 }
 
+// ONBOARDING FORM CALCULATIONS
 document.getElementById('fireOnboardingForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    const rRate = parseFloat(document.getElementById('returnRate').value);
     const annualExpenses = parseFloat(document.getElementById('annualExpenses').value);
     const savingsAmount = parseFloat(document.getElementById('savingsAmount').value);
     
-    // CONVERT ₱ SAVINGS TO A RATE (%) FOR THE BACKEND DATABASE
-    const calculatedRate = ((savingsAmount * 12) / (annualExpenses + (savingsAmount * 12)) * 100).toFixed(1);
+    const calculatedRate = ((savingsAmount * 12) / (annualExpenses + (savingsAmount * 12)) * 100).toFixed(2);
 
     const onboardingData = {
         userId: localStorage.getItem('activeUserId'),
         username: document.getElementById('username').value,
-        age: document.getElementById('currentAge').value,
-        retireAge: document.getElementById('targetRetireAge').value,
-        savings: document.getElementById('currentSavings').value,
+        age: parseInt(document.getElementById('currentAge').value),
+        retireAge: parseInt(document.getElementById('targetRetireAge').value),
+        savings: parseFloat(document.getElementById('currentSavings').value),
         expenses: annualExpenses,
-        sRate: calculatedRate,
-        rRate: document.getElementById('returnRate').value,
+        sRate: parseFloat(calculatedRate), 
+        rRate: rRate, 
         fireType: document.querySelector('input[name="fireType"]:checked').value
     };
 
