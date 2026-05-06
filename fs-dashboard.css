@@ -233,6 +233,58 @@ h3 {
     font-size: 1.2rem;
 }
 
+.calculator-panel {
+    border-top: 5px solid var(--success-green);
+    background: #fdfdfd;
+}
+
+.calc-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.calc-group label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+}
+
+.calc-group input, .calc-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+.verdict-banner {
+    margin-top: 20px;
+    padding: 20px;
+    background: linear-gradient(90deg, #fffaf0 0%, #fff 100%);
+    border-left: 5px solid var(--primary-orange);
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.verdict-banner span {
+    color: var(--primary-orange);
+    font-size: 1.4rem;
+}
+
+.save-archive-btn {
+    background: var(--success-green);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
 .add-btn {
     background: var(--primary-orange);
     color: var(--white);
