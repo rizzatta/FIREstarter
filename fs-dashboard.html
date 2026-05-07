@@ -85,7 +85,7 @@
         <section class="wide-card calculator-panel">
             <div class="card-header-row">
                 <h3>Live Strategy Adjuster</h3>
-                <button class="save-archive-btn" onclick="updateDatabase()">Sync to Archive</button>
+                <button class="save-archive-btn" onclick="updateDatabase()">Sync to Database</button>
             </div>
             <div class="calc-grid">
                 <div class="calc-group">
@@ -93,16 +93,20 @@
                     <input type="number" id="liveIncome" oninput="liveUpdate()" value="50000">
                 </div>
                 <div class="calc-group">
+                    <label>Current Net Worth (₱)</label>
+                    <input type="number" id="liveNetWorth" oninput="liveUpdate()" value="0">
+                </div>
+                <div class="calc-group">
                     <label>Monthly Spending (₱)</label>
                     <input type="number" id="liveSpending" oninput="liveUpdate()" value="30000">
                 </div>
                 <div class="calc-group">
-                    <label>Ideal Retire Spending (₱/yr)</label>
-                    <input type="number" id="liveRetireSpending" oninput="liveUpdate()" value="600000">
+                    <label>Ideal Retire Spending (ANNUAL ₱)</label>
+                    <input type="number" id="liveRetireSpending" oninput="liveUpdate()" value="600000" placeholder="e.g. 600000 for 50k/mo">
                 </div>
                 <div class="calc-group">
-                    <label>Expected Return (%)</label>
-                    <input type="number" id="liveReturn" step="0.1" oninput="liveUpdate()" value="8.0">
+                    <label>Expected Return (Post-Inflation %)</label>
+                    <input type="number" id="liveReturn" step="0.1" oninput="liveUpdate()" value="5.0" title="Stock market average (8%) minus inflation (3%)">
                 </div>
                 <div class="calc-group">
                     <label>Safe Withdrawal Rate (%)</label>
@@ -116,11 +120,14 @@
                     </select>
                 </div>
             </div>
-            <div id="liveVerdict" class="verdict-banner">Adjust sliders to see your freedom date.</div>
+            <div id="liveVerdict" class="verdict-banner">Adjust numbers to see your freedom date.</div>
         </section>
 
         <section class="wide-card">
-            <h3>Growth History (Salary & Logic)</h3>
+            <div class="card-header-row">
+                <h3>Growth History (Snapshots)</h3>
+                <button class="add-btn" onclick="logSnapshot()">+ Log Snapshot</button>
+            </div>
             <div class="table-container">
                 <table class="history-table">
                     <thead>
@@ -129,8 +136,7 @@
                             <th>Monthly Income</th>
                             <th>Exp. Return</th>
                             <th>FIRE Target</th>
-                            <th>Status</th>
-                        </tr>
+                            <th>Action</th> </tr>
                     </thead>
                     <tbody id="historyLogBody">
                     </tbody>
@@ -138,7 +144,6 @@
             </div>
         </section>
     </main>
-
     <script src="fs-dashboard.js"></script>
 </body>
 </html>
