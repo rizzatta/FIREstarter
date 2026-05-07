@@ -1,169 +1,121 @@
 const userId = localStorage.getItem('activeUserId');
+let fireChartInstance = null;
+let globalUserData = null; 
 
 // GATEKEEPER
-if (!userId || userId === "null") window.location.href = "fs-login.html";
+if (!userId || userId === "null") {
+    window.location.href = "fs-login.html";
+}
 
+// INIT
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const response = await fetch(`http://localhost:5000/api/user-data/${userId}`);
-        if (response.ok) {
-            const data = await response.json();
-            updateUI(data);
-            initChart(data); 
-        } else {
-            logout();
-        }
-    } catch (err) { console.error("Archive Access Denied:", err); }
+        const res = await fetch(`http://localhost:5000/api/user-data/${userId}`);
+        if (!res.ok) return logout();
+
+        const data = await res.json();
+        globalUserData = data; 
+
+        updateUI(data);
+        initChart(data);
+        populateHistory(data.history || []); 
+        syncLiveInputs(data); 
+    } catch (err) {
+        console.error("Archive Access Denied:", err);
+    }
 });
 
-// UI UPDATER
+
+// UI 
 function updateUI(data) {
-    const expenses = parseFloat(data.annual_expenses) || 0;
-    const savings = parseFloat(data.current_savings) || 0;
-    const mult = parseFloat(data.fire_multiplier) || 25;
-    const fireTarget = expenses * mult;
-    const leanTarget = expenses * 20;
-    const standardTarget = expenses * 25;
-    const fatTarget = expenses * 30;
+    const expenses = +data.annual_expenses || 0;
+    const savings = +data.current_savings || 0;
+    const multiplier = +data.fire_multiplier || 25;
+    const fireTarget = expenses * multiplier;
 
-    const progressPct = fireTarget > 0 ? Math.min((savings / fireTarget) * 100, 100).toFixed(1) : 0;
-    const progressBar = document.getElementById('fireProgress');
-    if (progressBar) progressBar.style.width = progressPct + "%";
-    document.getElementById('progressPct').innerText = progressPct + "%";
+    document.getElementById('welcomeName').innerText = data.username || "Archivist";
+    document.getElementById('snapshotCount').innerText = `${data.history ? data.history.length : 0} snapshots recorded`;
+    document.getElementById('fireTarget').innerText = `₱${fireTarget.toLocaleString()}`;
+    document.getElementById('currentSavings').innerText = `₱${savings.toLocaleString()}`;
+    document.getElementById('statSavingsRate').innerText = (data.savings_rate || 0) + "%";
+    document.getElementById('statReturn').innerText = (data.investment_return_rate || 8) + "%";
+    document.getElementById('statSWR').innerText = (100 / multiplier).toFixed(1) + "%";
 
-    let statusText = "Building Archive...";
-    if (savings >= fatTarget) statusText = "FAT FIRE REACHED";
-    else if (savings >= standardTarget) statusText = "STANDARD FIRE REACHED";
-    else if (savings >= leanTarget) statusText = "LEAN FIRE REACHED";
-    
-    document.getElementById('fireTypeDisplay').innerText = statusText;
+    const progress = fireTarget > 0
+        ? Math.min((savings / fireTarget) * 100, 100).toFixed(1)
+        : 0;
+
+    document.getElementById('fireProgress').style.width = progress + "%";
+    document.getElementById('progressPct').innerText = progress + "%";
+
+    let phaseText = "";
+    if (progress < 25) phaseText = "Phase 1: Accumulation (0% - 25%)";
+    else if (progress < 75) phaseText = "Phase 2: Compounding (25% - 75%)";
+    else if (progress < 100) phaseText = "Phase 3: Coasting (75% - 99%)";
+    else phaseText = "TARGET REACHED (100%)";
+
+    document.getElementById('fireTypeDisplay').innerHTML = phaseText;
     document.getElementById('targetLabel').innerText = `₱${fireTarget.toLocaleString()}`;
 }
 
-// GROWTH CHART
-async function initChart(data) {
+// CHART 
+function initChart(data) {
     const ctx = document.getElementById('growthChart').getContext('2d');
-    const currentAge = parseInt(data.age);
-    const retireAgeTarget = parseInt(data.target_retirement_age);
-    const annualExpenses = parseFloat(data.annual_expenses);
-    const returnRate = (parseFloat(data.investment_return_rate) / 100) || 0.08;
-    
-    const monthlySavings = (annualExpenses / (1 - (data.savings_rate/100))) * (data.savings_rate/100) / 12;
-    const fireTarget = annualExpenses * parseFloat(data.fire_multiplier);
 
-    let labels = [], principalData = [], returnsData = [];
-    let totalSavings = parseFloat(data.current_savings);
-    let totalPrincipal = totalSavings;
-    let fireAge = null;
-
-    for (let age = currentAge; age <= 80; age++) {
-        labels.push(age);
-        principalData.push(totalPrincipal);
-        returnsData.push(Math.max(0, totalSavings - totalPrincipal));
-
-        if (totalSavings >= fireTarget && fireAge === null) fireAge = age;
-
-        totalSavings = (totalSavings * (1 + returnRate)) + (monthlySavings * 12);
-        totalPrincipal += (monthlySavings * 12);
+    if (fireChartInstance) {
+        fireChartInstance.destroy();
     }
 
-    const earlyRetireAge = Math.max(currentAge + 1, (fireAge || retireAgeTarget) - 5);
-    const yearsToEarly = earlyRetireAge - currentAge;
-    const extraNeeded = Math.max(0, (fireTarget - totalSavings) / (yearsToEarly * 12)); 
+    const age = +data.age || 20; 
+    const expenses = +data.annual_expenses || 0;
+    const savings = +data.current_savings || 0;
+    const rate = (+data.investment_return_rate / 100) || 0.08;
+    const multiplier = +data.fire_multiplier || 25;
+    const savingsRate = (+data.savings_rate / 100) || 0;
 
-    renderChart(ctx, labels, principalData, returnsData, fireTarget); 
-    updateSummary(data, fireTarget, fireAge, extraNeeded, earlyRetireAge); 
-}
+    const fireTarget = expenses * multiplier;
 
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                { label: 'Principal', data: principalData, backgroundColor: 'rgba(40, 167, 69, 0.6)', fill: true },
-                { label: 'Returns', data: returnsData, backgroundColor: 'rgba(255, 140, 0, 0.4)', fill: true }
-            ]
-        },
-        options: { 
-            responsive: true, maintainAspectRatio: false, 
-            scales: { y: { stacked: true, ticks: { callback: v => '₱' + v.toLocaleString() } } } 
-        }
-    });
-
-    document.getElementById('projAge').innerText = retireAge;
-    document.getElementById('projWorth').innerText = `₱${currentTotal.toLocaleString()}`;
-}
-
-window.logout = function() {
-    localStorage.removeItem('activeUserId');
-    window.location.href = "fs-login.html";
-};
-
-// SETTINGS
-function updateUI(data) {
-    const expenses = parseFloat(data.annual_expenses) || 0;
-    const mult = parseFloat(data.fire_multiplier) || 25;
-    const savings = parseFloat(data.current_savings) || 0;
-    const fireTarget = expenses * mult;
-
-    const welcomeEl = document.getElementById('welcomeName');
-    if (welcomeEl) welcomeEl.innerText = data.username || "Archivist";
-
-    document.getElementById('fireTarget').innerText = `₱${fireTarget.toLocaleString()}`;
-    document.getElementById('currentSavings').innerText = `₱${savings.toLocaleString()}`;
-}
-
-async function initChart(data) {
-    const ctx = document.getElementById('growthChart').getContext('2d');
+    const safeSavingsRate = Math.min(savingsRate, 0.99); 
     
-    // DATA PARSING
-    const currentAge = parseInt(data.age);
-    const retireAgeTarget = parseInt(data.target_retirement_age);
-    const annualExpenses = parseFloat(data.annual_expenses);
-    const fireMultiplier = parseFloat(data.fire_multiplier);
-    const returnRate = (parseFloat(data.investment_return_rate) / 100);
-    const initialSavings = parseFloat(data.current_savings);
-    
-    const fireTarget = annualExpenses * fireMultiplier;
-    
-    const monthlySavings = (annualExpenses / (1 - (data.savings_rate/100))) * (data.savings_rate/100) / 12;
+    const monthlySavings = data.explicit_monthly_savings !== undefined 
+        ? data.explicit_monthly_savings 
+        : (expenses > 0 ? (expenses / (1 - safeSavingsRate)) * safeSavingsRate / 12 : 0);
 
     let labels = [];
-    let principalData = []; 
-    let returnsData = [];   
-    let totalSavings = initialSavings;
-    let totalPrincipal = initialSavings;
-    let retirementYear = null;
+    let principal = [];
+    let returns = [];
 
-    for (let age = currentAge; age <= 80; age++) {
-        labels.push(age);
-        principalData.push(totalPrincipal);
-        returnsData.push(Math.max(0, totalSavings - totalPrincipal));
+    let total = savings;
+    let principalTotal = savings;
+    let fireAge = null;
 
-        if (totalSavings >= fireTarget && retirementYear === null) {
-            retirementYear = age;
-        }
+    for (let i = age; i <= 80; i++) {
+        labels.push(i);
+        principal.push(principalTotal);
+        returns.push(Math.max(0, total - principalTotal));
 
-        totalSavings = (totalSavings * (1 + returnRate)) + (monthlySavings * 12);
-        totalPrincipal += (monthlySavings * 12);
+        if (total >= fireTarget && !fireAge) fireAge = i;
+
+        total = total * (1 + rate) + (monthlySavings * 12);
+        principalTotal += monthlySavings * 12;
     }
 
-    new Chart(ctx, {
+    fireChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: labels,
+            labels,
             datasets: [
                 {
-                    label: 'Principal Saved',
-                    data: principalData,
-                    backgroundColor: 'rgba(54, 162, 235, 0.7)', 
+                    label: 'Principal',
+                    data: principal,
+                    backgroundColor: 'rgba(54,162,235,0.6)',
                     fill: true,
                     stack: 'combined'
                 },
                 {
-                    label: 'Investment Returns',
-                    data: returnsData,
-                    backgroundColor: 'rgba(75, 192, 192, 0.7)', 
+                    label: 'Returns',
+                    data: returns,
+                    backgroundColor: 'rgba(75,192,192,0.6)',
                     fill: true,
                     stack: 'combined'
                 }
@@ -173,118 +125,213 @@ async function initChart(data) {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: { 
-                    stacked: true, 
-                    beginAtZero: true,
-                    ticks: { callback: (v) => '₱' + v.toLocaleString() }
-                }
-            },
-            plugins: {
-                annotation: {
-                    annotations: {
-                        line1: {
-                            type: 'line',
-                            yMin: fireTarget,
-                            yMax: fireTarget,
-                            borderColor: 'red',
-                            borderDash: [6, 6],
-                            borderWidth: 3,
-                            label: { content: 'FIRE Target', display: true, position: 'end' }
-                        }
+                y: {
+                    stacked: true,
+                    ticks: {
+                        callback: v => '₱' + v.toLocaleString()
                     }
                 }
             }
         }
     });
 
-    document.getElementById('savingsRateCalc').innerText = 
-        `Initial savings rate: ${data.savings_rate}% (spending: ₱${annualExpenses.toLocaleString()})`;
-    document.getElementById('fireTargetCalc').innerText = 
-        `FIRE Target: ₱${fireTarget.toLocaleString()} (${fireMultiplier}x expected expenses)`;
-    document.getElementById('returnRateCalc').innerText = 
-        `Expected Portfolio Returns: ${(returnRate * 100).toFixed(1)}% annually`;
+    updateSummary(data, fireTarget, fireAge);
     
-    const verdictEl = document.getElementById('retirementVerdict');
-    if (retirementYear) {
-        const yearsToFire = retirementYear - currentAge;
-        verdictEl.innerHTML = `You can retire in <span>${yearsToFire} years</span> (at age ${retirementYear})`;
-    } else {
-        verdictEl.innerText = "Target not reached by age 80. Adjust your savings or return rate.";
-    }
+    document.getElementById('savingsRateCalc').innerText = `₱${Math.round(monthlySavings).toLocaleString()}/mo`;
+    document.getElementById('fireTargetCalc').innerText = `₱${fireTarget.toLocaleString()}`;
 }
 
-// GOAL TRACKER
-function updateSummary(data, fireTarget, fireAge, extraNeeded, earlyAge) {
-    const calcBox = document.getElementById('chartCalculations');
-    
-    document.getElementById('savingsRateCalc').innerText = 
-        `Initial savings rate: ${data.savings_rate}% (₱${(parseFloat(data.annual_expenses)/12).toLocaleString()}/mo spending)`;
-    
-    document.getElementById('fireTargetCalc').innerText = 
-        `FIRE Target: ₱${fireTarget.toLocaleString()} (${data.fire_multiplier}x expenses)`;
-
+// SUMMARY 
+function updateSummary(data, fireTarget, fireAge) {
     const verdict = document.getElementById('retirementVerdict');
+
     if (fireAge) {
-        verdict.innerHTML = `You can retire in <span>${fireAge - data.age} years</span> (at age ${fireAge}).<br>
-        <small>To retire at age ${earlyAge}, save an extra <b>₱${Math.round(extraNeeded).toLocaleString()}</b> per month.</small>`;
+        verdict.innerHTML = `You can retire in <span>${fireAge - (data.age || 20)} years</span> (age ${fireAge})`;
     } else {
-        verdict.innerText = "Current savings pace does not reach target by age 80.";
+        verdict.innerText = "Target not reached by age 80.";
     }
 }
 
-// LIVE GROWTH CHART GRAPH
-let growthChart = null;
+//HISTORY TABLE POPULATION 
+function populateHistory(historyArr) {
+    const tbody = document.getElementById('historyLogBody');
+    tbody.innerHTML = '';
+    
+    if (!historyArr || historyArr.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="table-empty">No snapshots found. Click '+ Log Snapshot' to record your first milestone!</td></tr>`;
+        return;
+    }
+
+    historyArr.forEach(log => {
+        const dateString = new Date(log.snapshot_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${dateString}</strong></td>
+            <td>₱${(+log.monthly_income || 0).toLocaleString()}</td>
+            <td><span class="badge" style="background:#e7f5ff; color:#1971c2; padding: 4px 8px; border-radius: 4px;">${log.investment_return_rate || 0}%</span></td>
+            <td><strong>₱${(+log.fire_target || 0).toLocaleString()}</strong></td>
+            <td>
+                <button class="delete-btn" onclick="deleteSnapshot(${log.snapshot_id})">Delete</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// LOG AND DELETE SNAPSHOT
+async function logSnapshot() {
+    if (!globalUserData) return alert("Sync to database first to establish a baseline.");
+
+    const expenses = +globalUserData.annual_expenses || 0;
+    const multiplier = +globalUserData.fire_multiplier || 25;
+    const target = expenses * multiplier;
+
+    const payload = {
+        userId: userId,
+        monthly_income: globalUserData.monthly_income || 0,
+        investment_return_rate: globalUserData.investment_return_rate || 0,
+        fire_target: target,
+        net_worth: globalUserData.current_savings || 0
+    };
+
+    try {
+        const res = await fetch('http://localhost:5000/api/save-snapshot', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await res.json(); 
+
+        if (res.ok) {
+            alert("Snapshot Logged!");
+            window.location.reload(); 
+        } else {
+            alert("SERVER REJECTED SNAPSHOT:\n" + JSON.stringify(result));
+        }
+    } catch (err) {
+        alert("NETWORK ERROR: Is your Node.js server running?");
+        console.error("Snapshot error:", err);
+    }
+}
+
+async function deleteSnapshot(snapshotId) {
+    if (!confirm("Are you sure you want to delete this snapshot?")) return;
+
+    try {
+        const res = await fetch(`http://localhost:5000/api/delete-snapshot/${snapshotId}`, {
+            method: 'DELETE'
+        });
+
+        if (res.ok) {
+            window.location.reload(); 
+        } else {
+            alert("Failed to delete.");
+        }
+    } catch (err) {
+        console.error("Delete error:", err);
+    }
+}
+
+// LIVE CALCULATOR LOGIC 
+function syncLiveInputs(data) {
+    if (!data) return;
+    
+    if (data.monthly_income > 0) document.getElementById('liveIncome').value = data.monthly_income;
+    if (data.monthly_spending > 0) document.getElementById('liveSpending').value = data.monthly_spending;
+    if (data.annual_expenses > 0) document.getElementById('liveRetireSpending').value = data.annual_expenses;
+    if (data.investment_return_rate > 0) document.getElementById('liveReturn').value = data.investment_return_rate;
+    
+    const netWorthInput = document.getElementById('liveNetWorth');
+    if (netWorthInput && data.current_savings > 0) {
+        netWorthInput.value = data.current_savings;
+    }
+    
+    const swr = data.fire_multiplier ? (100 / data.fire_multiplier).toFixed(1) : 4.0;
+    document.getElementById('liveSWR').value = swr;
+}
 
 function liveUpdate() {
-    const income = parseFloat(document.getElementById('liveIncome').value) || 0;
-    const currentSpend = parseFloat(document.getElementById('liveSpending').value) || 0;
-    const retireSpend = parseFloat(document.getElementById('liveRetireSpending').value) || 0;
-    const returnRate = parseFloat(document.getElementById('liveReturn').value) || 0;
-    const swr = parseFloat(document.getElementById('liveSWR').value) || 4;
+    if (!globalUserData) return;
 
-    const savingsAmount = income - currentSpend;
-    const savingsRate = (savingsAmount / income * 100).toFixed(1);
-    const fireTarget = (retireSpend / (swr / 100)); 
+    const income = +document.getElementById('liveIncome').value || 0;
+    const spending = +document.getElementById('liveSpending').value || 0;
+    const retireSpending = +document.getElementById('liveRetireSpending').value || 0;
+    const returnRate = +document.getElementById('liveReturn').value || 8.0;
+    const swr = +document.getElementById('liveSWR').value || 4.0;
 
-    document.getElementById('fireTarget').innerText = `₱${fireTarget.toLocaleString()}`;
-    document.getElementById('statSavingsRate').innerText = `${savingsRate}%`;
-    document.getElementById('statReturn').innerText = `${returnRate}%`;
-    document.getElementById('statSWR').innerText = `${swr}%`;
+    const monthlySavings = income - spending;
+    const liveSavingsRate = income > 0 ? (monthlySavings / income) * 100 : 0;
+    const liveMultiplier = swr > 0 ? 100 / swr : 25;
 
-    const userData = {
-        age: parseInt(document.getElementById('displayAge').innerText),
-        current_savings: parseFloat(document.getElementById('currentSavings').innerText.replace(/₱|,/g, '')),
-        annual_expenses: currentSpend * 12,
-        savings_rate: savingsRate,
+    const simulatedData = {
+        ...globalUserData,
+        annual_expenses: retireSpending,
+        savings_rate: liveSavingsRate,
         investment_return_rate: returnRate,
-        fire_multiplier: 100 / swr 
-    initChart(userData, fireTarget, savingsAmount * 12);
-}
+        fire_multiplier: liveMultiplier,
+        explicit_monthly_savings: monthlySavings
+    };
 
-function initChart(data, target, annualSavings) {
+    initChart(simulatedData);
 
-    const verdict = document.getElementById('liveVerdict');
-    const yearsToFire = fireAge ? (fireAge - data.age) : "unknown";
-    verdict.innerHTML = `Based on your ideal spending, you need <span>₱${target.toLocaleString()}</span>. 
-    You will reach this in <span>${yearsToFire} years</span>.`;
+    const newTarget = retireSpending * liveMultiplier;
+    document.getElementById('liveVerdict').innerText = `Simulation updated! Ideal Target: ₱${newTarget.toLocaleString()}`;
 }
 
 async function updateDatabase() {
-    const confirm = window.confirm("Archive career change? This will update your permanent financial record.");
-    if (!confirm) return;
-
-    const updatedData = {
-        userId: localStorage.getItem('activeUserId'),
-        expenses: parseFloat(document.getElementById('liveSpending').value) * 12,
-        sRate: parseFloat(document.getElementById('statSavingsRate').innerText),
-        rRate: parseFloat(document.getElementById('liveReturn').value)
-    };
-
-    const response = await fetch('http://localhost:5000/api/save-onboarding', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedData)
-    });
+    const btn = document.querySelector('.save-archive-btn');
+    btn.innerText = "Syncing...";
     
-    if (response.ok) alert("Archive Synchronized.");
+    try {
+        const netWorth = +(document.getElementById('liveNetWorth')?.value) || 0;
+        const retireSpending = +(document.getElementById('liveRetireSpending')?.value) || 0;
+        const returnRate = +(document.getElementById('liveReturn')?.value) || 0;
+        const swr = +(document.getElementById('liveSWR')?.value) || 4.0;
+        const income = +(document.getElementById('liveIncome')?.value) || 0;
+        const spending = +(document.getElementById('liveSpending')?.value) || 0;
+        
+        const monthlySavings = income - spending;
+        const newSavingsRate = income > 0 ? (monthlySavings / income) * 100 : 0;
+        const newMultiplier = swr > 0 ? 100 / swr : 25;
+
+        const payload = {
+            annual_expenses: Math.round(retireSpending),
+            investment_return_rate: Math.round(returnRate),
+            fire_multiplier: Math.round(newMultiplier),
+            savings_rate: Math.round(newSavingsRate),
+            current_savings: Math.round(netWorth), 
+            monthly_income: Math.round(income),
+            monthly_spending: Math.round(spending)
+        };
+
+        const res = await fetch(`http://localhost:5000/api/user-data/${userId}`, {
+            method: 'PUT', 
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        const result = await res.json();
+
+        if (res.ok && result.success) {
+            btn.innerText = "Archive Synced!";
+            globalUserData = { ...globalUserData, ...payload };
+            updateUI(globalUserData);
+            setTimeout(() => btn.innerText = "Sync to Archive", 2000);
+        } else {
+            alert("Sync Failed: " + (result.error || "Unknown Error"));
+            btn.innerText = "Sync Failed";
+        }
+    } catch(err) {
+        alert("CRITICAL ERROR: " + err.message);
+        console.error("Sync Error:", err);
+        btn.innerText = "Connection Error";
+    }
+}
+
+// LOGOUT
+function logout() {
+    localStorage.removeItem('activeUserId');
+    window.location.href = "fs-login.html";
 }
