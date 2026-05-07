@@ -50,17 +50,6 @@ app.post('/api/login', async (req, res) => {
 });
 
 // DATA ROUTES 
-app.get('/api/user-data/:userId', async (req, res) => {
-    const { userId } = req.params;
-    try {
-        const result = await pool.query("SELECT * FROM user_profiles WHERE user_id = $1", [userId]);
-        if (result.rows.length === 0) return res.status(404).json({ error: "No profile" });
-        res.json(result.rows[0]);
-    } catch (err) {
-        res.status(500).json({ error: "DB Error" });
-    }
-});
-
 app.post('/api/save-onboarding', async (req, res) => {
     const { userId, username, age, retireAge, savings, expenses, sRate, rRate, fireType } = req.body;
     const multipliers = { lean: 20, standard: 25, fat: 30 };
@@ -92,15 +81,91 @@ app.get('/api/user-status/:userId', async (req, res) => {
     }
 });
 
+// SAVE SNAPSHOT
 app.post('/api/save-snapshot', async (req, res) => {
-    const { userId, totalNetWorth } = req.body;
+    const { userId, monthly_income, investment_return_rate, fire_target, net_worth } = req.body;
     try {
-        const query = `INSERT INTO wealth_snapshots (user_id, total_net_worth) VALUES ($1, $2)
-                       ON CONFLICT (user_id, snapshot_date) DO UPDATE SET total_net_worth = EXCLUDED.total_net_worth;`;
-        await pool.query(query, [userId, totalNetWorth]);
+        const query = `
+            INSERT INTO wealth_snapshots (user_id, monthly_income, investment_return_rate, fire_target, net_worth)
+            VALUES ($1, $2, $3, $4, $5) RETURNING *;
+        `;
+        await pool.query(query, [userId, monthly_income, investment_return_rate, fire_target, net_worth]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error("ACTUAL DB ERROR:", err.message); 
+        res.status(500).json({ error: err.message }); 
+    }
+});
+
+app.put('/api/user-data/:userId', async (req, res) => {
+    const { userId } = req.params;
+    
+    const { annual_expenses, investment_return_rate, fire_multiplier, savings_rate, current_savings, monthly_income, monthly_spending } = req.body;
+    
+    try {
+        const query = `
+            INSERT INTO user_profiles (user_id, annual_expenses, investment_return_rate, fire_multiplier, savings_rate, current_savings, monthly_income, monthly_spending)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT (user_id) 
+            DO UPDATE SET 
+                annual_expenses = EXCLUDED.annual_expenses, 
+                investment_return_rate = EXCLUDED.investment_return_rate, 
+                fire_multiplier = EXCLUDED.fire_multiplier, 
+                savings_rate = EXCLUDED.savings_rate,
+                current_savings = EXCLUDED.current_savings,
+                monthly_income = EXCLUDED.monthly_income,
+                monthly_spending = EXCLUDED.monthly_spending
+            RETURNING *;
+        `;
+        
+        const result = await pool.query(query, [userId, annual_expenses, investment_return_rate, fire_multiplier, savings_rate, current_savings, monthly_income, monthly_spending]);
+        
+        res.json({ success: true, data: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/user-data/:userId', async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const profileResult = await pool.query("SELECT * FROM user_profiles WHERE user_id = $1", [userId]);
+        if (profileResult.rows.length === 0) return res.status(404).json({ error: "No profile" });
+
+        const profile = profileResult.rows[0];
+
+        const historyResult = await pool.query("SELECT * FROM wealth_snapshots WHERE user_id = $1 ORDER BY snapshot_date DESC", [userId]);
+        profile.history = historyResult.rows; 
+
+        res.json(profile);
+    } catch (err) {
+        res.status(500).json({ error: "Database Error" });
+    }
+});
+
+// CREATE SNAPSHOT
+app.post('/api/save-snapshot', async (req, res) => {
+    const { userId, monthly_income, investment_return_rate, fire_target, net_worth } = req.body;
+    try {
+        const query = `
+            INSERT INTO wealth_snapshots (user_id, monthly_income, investment_return_rate, fire_target, net_worth)
+            VALUES ($1, $2, $3, $4, $5) RETURNING *;
+        `;
+        await pool.query(query, [userId, monthly_income, investment_return_rate, fire_target, net_worth]);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: "Snapshot failed" });
+    }
+});
+
+// DELETE SNAPSHOT
+app.delete('/api/delete-snapshot/:snapshotId', async (req, res) => {
+    const { snapshotId } = req.params;
+    try {
+        await pool.query("DELETE FROM wealth_snapshots WHERE snapshot_id = $1", [snapshotId]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Delete failed" });
     }
 });
 
