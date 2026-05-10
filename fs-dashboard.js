@@ -59,86 +59,116 @@ function updateUI(data) {
 }
 
 // CHART 
-function initChart(data) {
+function initChart(data, target, annualSavings, method) {
     const ctx = document.getElementById('growthChart').getContext('2d');
+    if (growthChart) growthChart.destroy(); 
 
-    if (fireChartInstance) {
-        fireChartInstance.destroy();
-    }
-
-    const age = +data.age || 20; 
-    const expenses = +data.annual_expenses || 0;
-    const savings = +data.current_savings || 0;
-    const rate = (+data.investment_return_rate / 100) || 0.08;
-    const multiplier = +data.fire_multiplier || 25;
-    const savingsRate = (+data.savings_rate / 100) || 0;
-
-    const fireTarget = expenses * multiplier;
-
-    const safeSavingsRate = Math.min(savingsRate, 0.99); 
-    
-    const monthlySavings = data.explicit_monthly_savings !== undefined 
-        ? data.explicit_monthly_savings 
-        : (expenses > 0 ? (expenses / (1 - safeSavingsRate)) * safeSavingsRate / 12 : 0);
-
+    const currentAge = data.age;
+    const maxAge = 90;
     let labels = [];
-    let principal = [];
-    let returns = [];
+    for (let a = currentAge; a <= maxAge; a++) labels.push(a);
 
-    let total = savings;
-    let principalTotal = savings;
-    let fireAge = null;
+    const verdict = document.getElementById('liveVerdict');
 
-    for (let i = age; i <= 80; i++) {
-        labels.push(i);
-        principal.push(principalTotal);
-        returns.push(Math.max(0, total - principalTotal));
+    // OPTION A: FIXED RETURNS 
+    if (method === 'fixed') {
+        let principalData = [], returnsData = [];
+        let totalSavings = data.current_savings;
+        let totalPrincipal = totalSavings;
+        let fireAge = null;
 
-        if (total >= fireTarget && !fireAge) fireAge = i;
+        for (let age = currentAge; age <= maxAge; age++) {
+            principalData.push(totalPrincipal);
+            returnsData.push(Math.max(0, totalSavings - totalPrincipal));
 
-        total = total * (1 + rate) + (monthlySavings * 12);
-        principalTotal += monthlySavings * 12;
-    }
+            if (totalSavings >= target && fireAge === null) fireAge = age;
 
-    fireChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels,
-            datasets: [
-                {
-                    label: 'Principal',
-                    data: principal,
-                    backgroundColor: 'rgba(54,162,235,0.6)',
-                    fill: true,
-                    stack: 'combined'
-                },
-                {
-                    label: 'Returns',
-                    data: returns,
-                    backgroundColor: 'rgba(75,192,192,0.6)',
-                    fill: true,
-                    stack: 'combined'
+            totalSavings = (totalSavings * (1 + data.investment_return_rate)) + annualSavings;
+            totalPrincipal += annualSavings;
+        }
+
+        growthChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Principal', data: principalData, backgroundColor: 'rgba(54, 162, 235, 0.7)', fill: true, stack: 'combined' },
+                    { label: 'Returns', data: returnsData, backgroundColor: 'rgba(40, 167, 69, 0.7)', fill: true, stack: 'combined' }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { stacked: true } } }
+        });
+
+        const yearsToFire = fireAge ? (fireAge - currentAge) : "unknown";
+        verdict.innerHTML = `Based on your ideal spending, you need <span>₱${target.toLocaleString()}</span>. You will reach this in <span>${yearsToFire} years</span>.`;
+    } 
+    
+    // OPTION B: MONTE CARLO 
+    else if (method === 'monte-carlo') {
+        const numSimulations = 500; 
+        const maxLinesToDraw = 25;  
+        let successCount = 0;
+        let datasets = [];
+
+        for (let sim = 0; sim < numSimulations; sim++) {
+            let pathData = [];
+            let currentPortfolio = data.current_savings;
+            let isBankrupt = false;
+
+            for (let age = currentAge; age <= maxAge; age++) {
+                pathData.push(Math.max(0, currentPortfolio));
+
+                let randomYearlyReturn = randomNormal(data.investment_return_rate, data.volatility);
+
+                if (currentPortfolio < target) {
+                    currentPortfolio = (currentPortfolio * (1 + randomYearlyReturn)) + annualSavings;
+                } else {
+                    currentPortfolio = (currentPortfolio * (1 + randomYearlyReturn)) - data.retire_spending;
                 }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    stacked: true,
-                    ticks: {
-                        callback: v => '₱' + v.toLocaleString()
-                    }
-                }
+
+                if (currentPortfolio <= 0) isBankrupt = true;
+            }
+
+            if (!isBankrupt) successCount++;
+
+            if (sim < maxLinesToDraw) {
+                datasets.push({
+                    label: `Sim ${sim+1}`,
+                    data: pathData,
+                    borderColor: isBankrupt ? 'rgba(220, 53, 69, 0.3)' : 'rgba(255, 140, 0, 0.15)', 
+                    borderWidth: 1.5,
+                    fill: false,
+                    pointRadius: 0
+                });
             }
         }
-    });
 
-    updateSummary(data, fireTarget, fireAge);
-    
-    document.getElementById('savingsRateCalc').innerText = `₱${Math.round(monthlySavings).toLocaleString()}/mo`;
-    document.getElementById('fireTargetCalc').innerText = `₱${fireTarget.toLocaleString()}`;
+        datasets.push({
+            label: 'FIRE Target',
+            data: Array(maxAge - currentAge + 1).fill(target),
+            borderColor: '#333',
+            borderDash: [5, 5],
+            borderWidth: 2,
+            fill: false,
+            pointRadius: 0
+        });
+
+        growthChart = new Chart(ctx, {
+            type: 'line',
+            data: { labels: labels, datasets: datasets },
+            options: { 
+                responsive: true, maintainAspectRatio: false, 
+                plugins: { legend: { display: false } }, 
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        const successRate = ((successCount / numSimulations) * 100).toFixed(1);
+        let color = successRate > 90 ? 'var(--success-green)' : (successRate > 75 ? 'var(--primary-orange)' : 'red');
+        
+        verdict.innerHTML = `Monte Carlo Stress Test: 500 market realities simulated.<br> 
+        Your strategy has a <span style="color: ${color}; font-size: 1.8rem;">${successRate}% Success Rate</span> of surviving until Age 90.`;
+    }
 }
 
 // SUMMARY 
@@ -253,31 +283,34 @@ function syncLiveInputs(data) {
 }
 
 function liveUpdate() {
-    if (!globalUserData) return;
+    const income = parseFloat(document.getElementById('liveIncome').value) || 0;
+    const currentSpend = parseFloat(document.getElementById('liveSpending').value) || 0;
+    const retireSpend = parseFloat(document.getElementById('liveRetireSpending').value) || 0;
+    const returnRate = parseFloat(document.getElementById('liveReturn').value) || 0;
+    const swr = parseFloat(document.getElementById('liveSWR').value) || 4;
+    const volatility = parseFloat(document.getElementById('liveVolatility').value) || 15;
+    const method = document.getElementById('projectionMethod').value;
 
-    const income = +document.getElementById('liveIncome').value || 0;
-    const spending = +document.getElementById('liveSpending').value || 0;
-    const retireSpending = +document.getElementById('liveRetireSpending').value || 0;
-    const returnRate = +document.getElementById('liveReturn').value || 8.0;
-    const swr = +document.getElementById('liveSWR').value || 4.0;
+    const savingsAmount = income - currentSpend;
+    const savingsRate = (savingsAmount / income * 100).toFixed(1);
+    const fireTarget = (retireSpend / (swr / 100)); 
 
-    const monthlySavings = income - spending;
-    const liveSavingsRate = income > 0 ? (monthlySavings / income) * 100 : 0;
-    const liveMultiplier = swr > 0 ? 100 / swr : 25;
+    document.getElementById('fireTarget').innerText = `₱${fireTarget.toLocaleString()}`;
+    const statRateEl = document.getElementById('statSavingsRate');
+    if (statRateEl) statRateEl.innerText = `${savingsRate}%`;
 
-    const simulatedData = {
-        ...globalUserData,
-        annual_expenses: retireSpending,
-        savings_rate: liveSavingsRate,
-        investment_return_rate: returnRate,
-        fire_multiplier: liveMultiplier,
-        explicit_monthly_savings: monthlySavings
+    const userData = {
+        age: parseInt(document.getElementById('displayAge') ? document.getElementById('displayAge').innerText : 25),
+        current_savings: parseFloat(document.getElementById('currentSavings').innerText.replace(/₱|,/g, '')) || 0,
+        annual_expenses: currentSpend * 12,
+        retire_spending: retireSpend,
+        savings_rate: savingsRate,
+        investment_return_rate: returnRate / 100,
+        volatility: volatility / 100,
+        fire_multiplier: 100 / swr 
     };
-
-    initChart(simulatedData);
-
-    const newTarget = retireSpending * liveMultiplier;
-    document.getElementById('liveVerdict').innerText = `Simulation updated! Ideal Target: ₱${newTarget.toLocaleString()}`;
+    
+    initChart(userData, fireTarget, savingsAmount * 12, method);
 }
 
 async function updateDatabase() {
