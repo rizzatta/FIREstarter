@@ -119,6 +119,25 @@
                         <option value="monte-carlo" disabled>Monte Carlo (Locked)</option>
                     </select>
                 </div>
+                <div class="calc-group">
+    <label>Expected Return (%)</label>
+    <input type="number" id="liveReturn" step="0.1" oninput="liveUpdate()" value="8.0">
+</div>
+<div class="calc-group">
+    <label>Market Volatility / Risk (%)</label>
+    <input type="number" id="liveVolatility" step="0.1" oninput="liveUpdate()" value="15.0" title="Standard deviation. 15% is typical for an all-stock index fund.">
+</div>
+<div class="calc-group">
+    <label>Safe Withdrawal Rate (%)</label>
+    <input type="number" id="liveSWR" step="0.1" oninput="liveUpdate()" value="4.0">
+</div>
+<div class="calc-group" style="grid-column: span 3;">
+    <label>Simulation Method</label>
+    <select id="projectionMethod" onchange="liveUpdate()" style="background: #eef7ee; border-color: var(--success-green);">
+        <option value="fixed">Fixed Returns (Predictable Growth)</option>
+        <option value="monte-carlo">Monte Carlo (Market Volatility Stress Test)</option>
+    </select>
+</div>
             </div>
             <div id="liveVerdict" class="verdict-banner">Adjust numbers to see your freedom date.</div>
         </section>
