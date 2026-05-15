@@ -1,64 +1,93 @@
+// THE GATEKEEPER (Immediate Check)
 const userId = localStorage.getItem('activeUserId');
-let fireChartInstance = null;
-let globalUserData = null; 
+let growthChart = null;
+let globalUserData = null;
 
-// GATEKEEPER
 if (!userId || userId === "null") {
+    console.log("Access Denied: No active session found.");
     window.location.href = "fs-login.html";
 }
 
-// INIT
+
+// MATH HELPERS (Box-Muller Transform)
+function randomNormal(mean, stdDev) {
+    let u1 = Math.random();
+    let u2 = Math.random();
+    let z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+    return mean + z0 * stdDev;
+}
+
+
+// MAIN DASHBOARD INITIALIZATION
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         const res = await fetch(`http://localhost:5000/api/user-data/${userId}`);
-        if (!res.ok) return logout();
+        
+        if (!res.ok) {
+            console.error("Archive fetch failed. Status:", res.status);
+            return logout();
+        }
 
         const data = await res.json();
-        globalUserData = data; 
+        globalUserData = data;
 
-        updateUI(data);
-        initChart(data);
-        populateHistory(data.history || []); 
-        syncLiveInputs(data); 
+        document.getElementById('welcomeName').innerText = data.username || "Archivist";
+        document.getElementById('displayAge').innerText = data.age || 25;
+        
+        const expenses = parseFloat(data.annual_expenses) || 0;
+        const savingsRate = parseFloat(data.savings_rate) || 0;
+        const income = (expenses / 12) / (1 - (savingsRate / 100));
+
+        document.getElementById('liveIncome').value = Math.round(income);
+        document.getElementById('liveNetWorth').value = Math.round(data.current_savings);
+        document.getElementById('liveSpending').value = Math.round(expenses / 12);
+        document.getElementById('liveRetireSpending').value = Math.round(expenses);
+        document.getElementById('liveReturn').value = data.investment_return_rate || 8.0;
+        document.getElementById('liveSWR').value = (100 / (data.fire_multiplier || 25)).toFixed(1);
+
+        loadStrategyHistory();
+        liveUpdate();
+
     } catch (err) {
         console.error("Archive Access Denied:", err);
     }
 });
 
 
-// UI 
-function updateUI(data) {
-    const expenses = +data.annual_expenses || 0;
-    const savings = +data.current_savings || 0;
-    const multiplier = +data.fire_multiplier || 25;
-    const fireTarget = expenses * multiplier;
+// UI UPDATER (Live Strategy Adjuster)
+function liveUpdate() {
+    const income = parseFloat(document.getElementById('liveIncome').value) || 0;
+    const netWorth = parseFloat(document.getElementById('liveNetWorth').value) || 0;
+    const currentSpend = parseFloat(document.getElementById('liveSpending').value) || 0;
+    const retireSpend = parseFloat(document.getElementById('liveRetireSpending').value) || 0;
+    const returnRate = parseFloat(document.getElementById('liveReturn').value) || 0;
+    const swr = parseFloat(document.getElementById('liveSWR').value) || 4;
+    const volatility = parseFloat(document.getElementById('liveVolatility').value) || 15;
+    const method = document.getElementById('projectionMethod').value;
 
-    document.getElementById('welcomeName').innerText = data.username || "Archivist";
-    document.getElementById('snapshotCount').innerText = `${data.history ? data.history.length : 0} snapshots recorded`;
-    document.getElementById('fireTarget').innerText = `₱${fireTarget.toLocaleString()}`;
-    document.getElementById('currentSavings').innerText = `₱${savings.toLocaleString()}`;
-    document.getElementById('statSavingsRate').innerText = (data.savings_rate || 0) + "%";
-    document.getElementById('statReturn').innerText = (data.investment_return_rate || 8) + "%";
-    document.getElementById('statSWR').innerText = (100 / multiplier).toFixed(1) + "%";
+    const savingsAmount = income - currentSpend;
+    const savingsRate = income > 0 ? (savingsAmount / income * 100).toFixed(1) : 0;
+    const fireTarget = (retireSpend / (swr / 100));
 
-    const progress = fireTarget > 0
-        ? Math.min((savings / fireTarget) * 100, 100).toFixed(1)
-        : 0;
+    document.getElementById('fireTargetDisplay').innerText = `₱${fireTarget.toLocaleString()}`;
+    document.getElementById('currentSavingsDisplay').innerText = `₱${netWorth.toLocaleString()}`;
+    document.getElementById('statSavingsRate').innerText = `${savingsRate}%`;
+    document.getElementById('statReturn').innerText = `${returnRate}%`;
+    document.getElementById('statSWR').innerText = `${swr}%`;
 
-    document.getElementById('fireProgress').style.width = progress + "%";
-    document.getElementById('progressPct').innerText = progress + "%";
-
-    let phaseText = "";
-    if (progress < 25) phaseText = "Phase 1: Accumulation (0% - 25%)";
-    else if (progress < 75) phaseText = "Phase 2: Compounding (25% - 75%)";
-    else if (progress < 100) phaseText = "Phase 3: Coasting (75% - 99%)";
-    else phaseText = "TARGET REACHED (100%)";
-
-    document.getElementById('fireTypeDisplay').innerHTML = phaseText;
-    document.getElementById('targetLabel').innerText = `₱${fireTarget.toLocaleString()}`;
+    const userData = {
+        age: parseInt(document.getElementById('displayAge').innerText),
+        current_savings: netWorth,
+        retire_spending: retireSpend,
+        investment_return_rate: returnRate / 100,
+        volatility: volatility / 100
+    };
+    
+    initChart(userData, fireTarget, savingsAmount * 12, method);
 }
 
-// CHART 
+
+// WEALTH PROJECTION CHART ENGINE
 function initChart(data, target, annualSavings, method) {
     const ctx = document.getElementById('growthChart').getContext('2d');
     if (growthChart) growthChart.destroy(); 
@@ -70,7 +99,7 @@ function initChart(data, target, annualSavings, method) {
 
     const verdict = document.getElementById('liveVerdict');
 
-    // OPTION A: FIXED RETURNS 
+    // OPTION A: FIXED RETURNS
     if (method === 'fixed') {
         let principalData = [], returnsData = [];
         let totalSavings = data.current_savings;
@@ -96,17 +125,26 @@ function initChart(data, target, annualSavings, method) {
                     { label: 'Returns', data: returnsData, backgroundColor: 'rgba(40, 167, 69, 0.7)', fill: true, stack: 'combined' }
                 ]
             },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { stacked: true } } }
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { y: { stacked: true, ticks: { callback: (v) => '₱' + v.toLocaleString() } } },
+                plugins: {
+                    annotation: {
+                        annotations: {
+                            line1: { type: 'line', yMin: target, yMax: target, borderColor: 'red', borderDash: [6, 6], borderWidth: 2 }
+                        }
+                    }
+                }
+            }
         });
 
         const yearsToFire = fireAge ? (fireAge - currentAge) : "unknown";
         verdict.innerHTML = `Based on your ideal spending, you need <span>₱${target.toLocaleString()}</span>. You will reach this in <span>${yearsToFire} years</span>.`;
-    } 
     
-    // OPTION B: MONTE CARLO 
+    } 
+    // OPTION B: MONTE CARLO (Stress Test)
     else if (method === 'monte-carlo') {
-        const numSimulations = 500; 
-        const maxLinesToDraw = 25;  
+        const numSimulations = 500;
         let successCount = 0;
         let datasets = [];
 
@@ -117,7 +155,6 @@ function initChart(data, target, annualSavings, method) {
 
             for (let age = currentAge; age <= maxAge; age++) {
                 pathData.push(Math.max(0, currentPortfolio));
-
                 let randomYearlyReturn = randomNormal(data.investment_return_rate, data.volatility);
 
                 if (currentPortfolio < target) {
@@ -131,14 +168,12 @@ function initChart(data, target, annualSavings, method) {
 
             if (!isBankrupt) successCount++;
 
-            if (sim < maxLinesToDraw) {
+            if (sim < 25) {
                 datasets.push({
                     label: `Sim ${sim+1}`,
                     data: pathData,
-                    borderColor: isBankrupt ? 'rgba(220, 53, 69, 0.3)' : 'rgba(255, 140, 0, 0.15)', 
-                    borderWidth: 1.5,
-                    fill: false,
-                    pointRadius: 0
+                    borderColor: isBankrupt ? 'rgba(220, 53, 69, 0.3)' : 'rgba(255, 140, 0, 0.15)',
+                    borderWidth: 1.5, fill: false, pointRadius: 0
                 });
             }
         }
@@ -146,233 +181,79 @@ function initChart(data, target, annualSavings, method) {
         datasets.push({
             label: 'FIRE Target',
             data: Array(maxAge - currentAge + 1).fill(target),
-            borderColor: '#333',
-            borderDash: [5, 5],
-            borderWidth: 2,
-            fill: false,
-            pointRadius: 0
+            borderColor: '#333', borderDash: [5, 5], borderWidth: 2, fill: false, pointRadius: 0
         });
 
         growthChart = new Chart(ctx, {
             type: 'line',
             data: { labels: labels, datasets: datasets },
-            options: { 
-                responsive: true, maintainAspectRatio: false, 
-                plugins: { legend: { display: false } }, 
-                scales: { y: { beginAtZero: true } }
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { callback: (v) => '₱' + v.toLocaleString() } } }
             }
         });
 
         const successRate = ((successCount / numSimulations) * 100).toFixed(1);
-        let color = successRate > 90 ? 'var(--success-green)' : (successRate > 75 ? 'var(--primary-orange)' : 'red');
+        let color = successRate > 90 ? '#28A745' : (successRate > 75 ? '#FF8C00' : 'red');
         
         verdict.innerHTML = `Monte Carlo Stress Test: 500 market realities simulated.<br> 
         Your strategy has a <span style="color: ${color}; font-size: 1.8rem;">${successRate}% Success Rate</span> of surviving until Age 90.`;
     }
 }
 
-// SUMMARY 
-function updateSummary(data, fireTarget, fireAge) {
-    const verdict = document.getElementById('retirementVerdict');
 
-    if (fireAge) {
-        verdict.innerHTML = `You can retire in <span>${fireAge - (data.age || 20)} years</span> (age ${fireAge})`;
-    } else {
-        verdict.innerText = "Target not reached by age 80.";
-    }
-}
+// ARCHIVE MANAGEMENT (Database Sync)
+async function updateDatabase() {
+    const income = parseFloat(document.getElementById('liveIncome').value);
+    const expenses = parseFloat(document.getElementById('liveSpending').value);
+    const returns = parseFloat(document.getElementById('liveReturn').value);
+    const swr = parseFloat(document.getElementById('liveSWR').value);
+    const target = (parseFloat(document.getElementById('liveRetireSpending').value) / (swr / 100));
+    const sRate = ((income - expenses) / income * 100);
 
-//HISTORY TABLE POPULATION 
-function populateHistory(historyArr) {
-    const tbody = document.getElementById('historyLogBody');
-    tbody.innerHTML = '';
-    
-    if (!historyArr || historyArr.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="table-empty">No snapshots found. Click '+ Log Snapshot' to record your first milestone!</td></tr>`;
-        return;
-    }
-
-    historyArr.forEach(log => {
-        const dateString = new Date(log.snapshot_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-        
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><strong>${dateString}</strong></td>
-            <td>₱${(+log.monthly_income || 0).toLocaleString()}</td>
-            <td><span class="badge" style="background:#e7f5ff; color:#1971c2; padding: 4px 8px; border-radius: 4px;">${log.investment_return_rate || 0}%</span></td>
-            <td><strong>₱${(+log.fire_target || 0).toLocaleString()}</strong></td>
-            <td>
-                <button class="delete-btn" onclick="deleteSnapshot(${log.snapshot_id})">Delete</button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-// LOG AND DELETE SNAPSHOT
-async function logSnapshot() {
-    if (!globalUserData) return alert("Sync to database first to establish a baseline.");
-
-    const expenses = +globalUserData.annual_expenses || 0;
-    const multiplier = +globalUserData.fire_multiplier || 25;
-    const target = expenses * multiplier;
-
-    const payload = {
-        userId: userId,
-        monthly_income: globalUserData.monthly_income || 0,
-        investment_return_rate: globalUserData.investment_return_rate || 0,
-        fire_target: target,
-        net_worth: globalUserData.current_savings || 0
+    const snapshot = {
+        userId, income, expenses, returns, swr, target,
+        sRate: parseFloat(sRate.toFixed(1))
     };
 
     try {
-        const res = await fetch('http://localhost:5000/api/save-snapshot', {
+        const response = await fetch('http://localhost:5000/api/save-strategy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(snapshot)
         });
 
-        const result = await res.json(); 
-
-        if (res.ok) {
-            alert("Snapshot Logged!");
-            window.location.reload(); 
-        } else {
-            alert("SERVER REJECTED SNAPSHOT:\n" + JSON.stringify(result));
+        if (response.ok) {
+            alert("Entry Saved to Archive!");
+            loadStrategyHistory(); 
         }
-    } catch (err) {
-        alert("NETWORK ERROR: Is your Node.js server running?");
-        console.error("Snapshot error:", err);
-    }
+    } catch (err) { console.error(err); }
 }
 
-async function deleteSnapshot(snapshotId) {
-    if (!confirm("Are you sure you want to delete this snapshot?")) return;
-
+async function loadStrategyHistory() {
     try {
-        const res = await fetch(`http://localhost:5000/api/delete-snapshot/${snapshotId}`, {
-            method: 'DELETE'
-        });
-
-        if (res.ok) {
-            window.location.reload(); 
-        } else {
-            alert("Failed to delete.");
-        }
-    } catch (err) {
-        console.error("Delete error:", err);
-    }
-}
-
-// LIVE CALCULATOR LOGIC 
-function syncLiveInputs(data) {
-    if (!data) return;
-    
-    if (data.monthly_income > 0) document.getElementById('liveIncome').value = data.monthly_income;
-    if (data.monthly_spending > 0) document.getElementById('liveSpending').value = data.monthly_spending;
-    if (data.annual_expenses > 0) document.getElementById('liveRetireSpending').value = data.annual_expenses;
-    if (data.investment_return_rate > 0) document.getElementById('liveReturn').value = data.investment_return_rate;
-    
-    const netWorthInput = document.getElementById('liveNetWorth');
-    if (netWorthInput && data.current_savings > 0) {
-        netWorthInput.value = data.current_savings;
-    }
-    
-    const swr = data.fire_multiplier ? (100 / data.fire_multiplier).toFixed(1) : 4.0;
-    document.getElementById('liveSWR').value = swr;
-}
-
-function liveUpdate() {
-    const income = parseFloat(document.getElementById('liveIncome').value) || 0;
-    const currentSpend = parseFloat(document.getElementById('liveSpending').value) || 0;
-    const retireSpend = parseFloat(document.getElementById('liveRetireSpending').value) || 0;
-    const returnRate = parseFloat(document.getElementById('liveReturn').value) || 0;
-    const swr = parseFloat(document.getElementById('liveSWR').value) || 4;
-    const volatility = parseFloat(document.getElementById('liveVolatility').value) || 15;
-    const method = document.getElementById('projectionMethod').value;
-
-    const savingsAmount = income - currentSpend;
-    const savingsRate = (savingsAmount / income * 100).toFixed(1);
-    const fireTarget = (retireSpend / (swr / 100)); 
-
-    document.getElementById('fireTarget').innerText = `₱${fireTarget.toLocaleString()}`;
-    const statRateEl = document.getElementById('statSavingsRate');
-    if (statRateEl) statRateEl.innerText = `${savingsRate}%`;
-
-    const userData = {
-        age: parseInt(document.getElementById('displayAge') ? document.getElementById('displayAge').innerText : 25),
-        current_savings: parseFloat(document.getElementById('currentSavings').innerText.replace(/₱|,/g, '')) || 0,
-        annual_expenses: currentSpend * 12,
-        retire_spending: retireSpend,
-        savings_rate: savingsRate,
-        investment_return_rate: returnRate / 100,
-        volatility: volatility / 100,
-        fire_multiplier: 100 / swr 
-    };
-    
-    initChart(userData, fireTarget, savingsAmount * 12, method);
-}
-
-async function updateDatabase() {
-    const btn = document.querySelector('.save-archive-btn');
-    btn.innerText = "Syncing...";
-    
-    try {
-        const netWorth = +(document.getElementById('liveNetWorth')?.value) || 0;
-        const retireSpending = +(document.getElementById('liveRetireSpending')?.value) || 0;
-        const returnRate = +(document.getElementById('liveReturn')?.value) || 0;
-        const swr = +(document.getElementById('liveSWR')?.value) || 4.0;
-        const income = +(document.getElementById('liveIncome')?.value) || 0;
-        const spending = +(document.getElementById('liveSpending')?.value) || 0;
+        const res = await fetch(`http://localhost:5000/api/strategy-history/${userId}`);
+        if (!res.ok) return;
+        const logs = await res.json();
         
-        const monthlySavings = income - spending;
-        const newSavingsRate = income > 0 ? (monthlySavings / income) * 100 : 0;
-        const newMultiplier = swr > 0 ? 100 / swr : 25;
-
-        const payload = {
-            annual_expenses: Math.round(retireSpending),
-            investment_return_rate: Math.round(returnRate),
-            fire_multiplier: Math.round(newMultiplier),
-            savings_rate: Math.round(newSavingsRate),
-            current_savings: Math.round(netWorth), 
-            monthly_income: Math.round(income),
-            monthly_spending: Math.round(spending)
-        };
-
-        const res = await fetch(`http://localhost:5000/api/user-data/${userId}`, {
-            method: 'PUT', 
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        
-        const result = await res.json();
-
-        if (res.ok && result.success) {
-            btn.innerText = "Archive Synced!";
-            globalUserData = { ...globalUserData, ...payload };
-            updateUI(globalUserData);
-            setTimeout(() => btn.innerText = "Sync to Archive", 2000);
-        } else {
-            alert("Sync Failed: " + (result.error || "Unknown Error"));
-            btn.innerText = "Sync Failed";
-        }
-    } catch(err) {
-        alert("CRITICAL ERROR: " + err.message);
-        console.error("Sync Error:", err);
-        btn.innerText = "Connection Error";
-    }
+        const tableBody = document.getElementById('strategyLogBody');
+        tableBody.innerHTML = logs.map(log => `
+            <tr>
+                <td>${new Date(log.snapshot_date).toLocaleDateString()}</td>
+                <td>₱${parseFloat(log.monthly_income).toLocaleString()}</td>
+                <td><span class="badge-green">${log.savings_rate}%</span></td>
+                <td>${log.expected_return}%</td>
+                <td>₱${parseFloat(log.fire_target).toLocaleString()}</td>
+            </tr>
+        `).join('');
+    } catch(err) { console.error("History fetch error:", err); }
 }
 
-// BOX-MULLER TRANSFORM
-function randomNormal(mean, stdDev) {
-    let u1 = Math.random();
-    let u2 = Math.random();
-    let z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
-    return mean + z0 * stdDev;
-}
 
-// LOGOUT
-function logout() {
+// GLOBAL ACTIONS
+window.logout = function() {
+    console.log("Security Protocol: Wiping session...");
     localStorage.removeItem('activeUserId');
     window.location.href = "fs-login.html";
-}
+};
