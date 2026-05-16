@@ -244,7 +244,9 @@ async function loadStrategyHistory() {
         if (!res.ok) return;
         const logs = await res.json();
         
-        const tableBody = document.getElementById('strategyLogBody');
+        document.getElementById('snapshotCount').innerText = `${logs.length} snapshots recorded`;
+
+        const tableBody = document.getElementById('historyLogBody');
         if (!tableBody) return; 
 
         tableBody.innerHTML = logs.map(log => `
@@ -253,10 +255,30 @@ async function loadStrategyHistory() {
                 <td>₱${parseFloat(log.monthly_income).toLocaleString()}</td>
                 <td>${log.expected_return}%</td>
                 <td>₱${parseFloat(log.fire_target).toLocaleString()}</td>
-                <td><span style="color:#28A745; font-weight:bold;">Active</span></td>
+                <td>
+                    <button onclick="deleteStrategy(${log.snapshot_id})" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Delete</button>
+                </td>
             </tr>
         `).join('');
     } catch(err) { console.error("History fetch error:", err); }
+}
+
+async function deleteStrategy(snapshotId) {
+    if (!confirm("Are you sure you want to delete this archive entry?")) return;
+
+    try {
+        const response = await fetch(`http://localhost:5000/api/strategy/${snapshotId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            loadStrategyHistory();
+        } else {
+            alert("Delete failed. Check server connection.");
+        }
+    } catch (err) {
+        console.error("Delete error:", err);
+    }
 }
 
 // GLOBAL ACTIONS
