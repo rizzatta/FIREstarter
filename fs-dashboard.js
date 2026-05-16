@@ -1,15 +1,13 @@
-// THE GATEKEEPER (Immediate Check)
+// THE GATEKEEPER
 const userId = localStorage.getItem('activeUserId');
 let growthChart = null;
 let globalUserData = null;
 
 if (!userId || userId === "null") {
-    console.log("Access Denied: No active session found.");
     window.location.href = "fs-login.html";
 }
 
-
-// MATH HELPERS (Box-Muller Transform)
+// MATH HELPERS
 function randomNormal(mean, stdDev) {
     let u1 = Math.random();
     let u2 = Math.random();
@@ -17,16 +15,11 @@ function randomNormal(mean, stdDev) {
     return mean + z0 * stdDev;
 }
 
-
 // MAIN DASHBOARD INITIALIZATION
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         const res = await fetch(`http://localhost:5000/api/user-data/${userId}`);
-        
-        if (!res.ok) {
-            console.error("Archive fetch failed. Status:", res.status);
-            return logout();
-        }
+        if (!res.ok) return logout();
 
         const data = await res.json();
         globalUserData = data;
@@ -47,14 +40,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         loadStrategyHistory();
         liveUpdate();
-
     } catch (err) {
         console.error("Archive Access Denied:", err);
     }
 });
 
-
-// UI UPDATER (Live Strategy Adjuster)
+// UI UPDATER
 function liveUpdate() {
     const income = parseFloat(document.getElementById('liveIncome').value) || 0;
     const netWorth = parseFloat(document.getElementById('liveNetWorth').value) || 0;
@@ -75,6 +66,22 @@ function liveUpdate() {
     document.getElementById('statReturn').innerText = `${returnRate}%`;
     document.getElementById('statSWR').innerText = `${swr}%`;
 
+    const progressPct = fireTarget > 0 ? Math.min((netWorth / fireTarget) * 100, 100).toFixed(1) : 0;
+    const progressBar = document.getElementById('fireProgress');
+    if (progressBar) progressBar.style.width = progressPct + "%";
+    
+    const pctLabel = document.getElementById('progressPct');
+    if (pctLabel) pctLabel.innerText = progressPct + "%";
+    
+    const targetLabel = document.getElementById('targetLabel');
+    if (targetLabel) targetLabel.innerText = `₱${fireTarget.toLocaleString()}`;
+
+    let statusText = "Building Archive...";
+    if (netWorth >= fireTarget * 1.2) statusText = "FAT FIRE REACHED";
+    else if (netWorth >= fireTarget) statusText = "STANDARD FIRE REACHED";
+    else if (netWorth >= fireTarget * 0.8) statusText = "LEAN FIRE REACHED";
+    document.getElementById('fireTypeDisplay').innerText = statusText;
+
     const userData = {
         age: parseInt(document.getElementById('displayAge').innerText),
         current_savings: netWorth,
@@ -85,7 +92,6 @@ function liveUpdate() {
     
     initChart(userData, fireTarget, savingsAmount * 12, method);
 }
-
 
 // WEALTH PROJECTION CHART ENGINE
 function initChart(data, target, annualSavings, method) {
@@ -99,7 +105,6 @@ function initChart(data, target, annualSavings, method) {
 
     const verdict = document.getElementById('liveVerdict');
 
-    // OPTION A: FIXED RETURNS
     if (method === 'fixed') {
         let principalData = [], returnsData = [];
         let totalSavings = data.current_savings;
@@ -141,9 +146,7 @@ function initChart(data, target, annualSavings, method) {
         const yearsToFire = fireAge ? (fireAge - currentAge) : "unknown";
         verdict.innerHTML = `Based on your ideal spending, you need <span>₱${target.toLocaleString()}</span>. You will reach this in <span>${yearsToFire} years</span>.`;
     
-    } 
-    // OPTION B: MONTE CARLO (Stress Test)
-    else if (method === 'monte-carlo') {
+    } else if (method === 'monte-carlo') {
         const numSimulations = 500;
         let successCount = 0;
         let datasets = [];
@@ -196,12 +199,10 @@ function initChart(data, target, annualSavings, method) {
 
         const successRate = ((successCount / numSimulations) * 100).toFixed(1);
         let color = successRate > 90 ? '#28A745' : (successRate > 75 ? '#FF8C00' : 'red');
-        
-        verdict.innerHTML = `Monte Carlo Stress Test: 500 market realities simulated.<br> 
-        Your strategy has a <span style="color: ${color}; font-size: 1.8rem;">${successRate}% Success Rate</span> of surviving until Age 90.`;
+        verdict.innerHTML = `Monte Carlo Stress Test: 500 realities simulated.<br> 
+        Your strategy has a <span style="color: ${color}; font-size: 1.8rem;">${successRate}% Success Rate</span>.`;
     }
 }
-
 
 // ARCHIVE MANAGEMENT (Database Sync)
 async function updateDatabase() {
@@ -227,9 +228,15 @@ async function updateDatabase() {
         if (response.ok) {
             alert("Entry Saved to Archive!");
             loadStrategyHistory(); 
+        } else {
+            alert("Database Error: Is the PostgreSQL table created?");
         }
     } catch (err) { console.error(err); }
 }
+
+window.logSnapshot = async function() {
+    updateDatabase();
+};
 
 async function loadStrategyHistory() {
     try {
@@ -238,22 +245,22 @@ async function loadStrategyHistory() {
         const logs = await res.json();
         
         const tableBody = document.getElementById('strategyLogBody');
+        if (!tableBody) return; 
+
         tableBody.innerHTML = logs.map(log => `
             <tr>
                 <td>${new Date(log.snapshot_date).toLocaleDateString()}</td>
                 <td>₱${parseFloat(log.monthly_income).toLocaleString()}</td>
-                <td><span class="badge-green">${log.savings_rate}%</span></td>
                 <td>${log.expected_return}%</td>
                 <td>₱${parseFloat(log.fire_target).toLocaleString()}</td>
+                <td><span style="color:#28A745; font-weight:bold;">Active</span></td>
             </tr>
         `).join('');
     } catch(err) { console.error("History fetch error:", err); }
 }
 
-
 // GLOBAL ACTIONS
 window.logout = function() {
-    console.log("Security Protocol: Wiping session...");
     localStorage.removeItem('activeUserId');
     window.location.href = "fs-login.html";
 };
