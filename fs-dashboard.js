@@ -76,14 +76,24 @@ function liveUpdate() {
     const targetLabel = document.getElementById('targetLabel');
     if (targetLabel) targetLabel.innerText = `₱${fireTarget.toLocaleString()}`;
 
-    let statusText = "Building Archive...";
-    if (netWorth >= fireTarget * 1.2) statusText = "FAT FIRE REACHED";
-    else if (netWorth >= fireTarget) statusText = "STANDARD FIRE REACHED";
-    else if (netWorth >= fireTarget * 0.8) statusText = "LEAN FIRE REACHED";
-    document.getElementById('fireTypeDisplay').innerText = statusText;
+    const progressPercentage = fireTarget > 0 ? (netWorth / fireTarget) * 100 : 0;
+
+    let phaseText = "Phase 1: Starting the FIRE (< 25%)";
+    if (progressPercentage >= 100) {
+        phaseText = "Phase 5: Financial Independence (100%+)";
+    } else if (progressPercentage >= 75) {
+        phaseText = "Phase 4: Lean FIRE / Home Stretch (75%)";
+    } else if (progressPercentage >= 50) {
+        phaseText = "Phase 3: Half-FIRE / Flamingo (50%)";
+    } else if (progressPercentage >= 25) {
+        phaseText = "Phase 2: Coast FIRE / Momentum (25%)";
+    }
+    
+    const fireTypeDisplay = document.getElementById('fireTypeDisplay');
+    if (fireTypeDisplay) fireTypeDisplay.innerText = phaseText;
 
     const userData = {
-        age: parseInt(document.getElementById('displayAge').innerText),
+        age: parseInt(document.getElementById('displayAge').innerText) || 25,
         current_savings: netWorth,
         retire_spending: retireSpend,
         investment_return_rate: returnRate / 100,
@@ -93,7 +103,7 @@ function liveUpdate() {
     initChart(userData, fireTarget, savingsAmount * 12, method);
 }
 
-// WEALTH PROJECTION CHART ENGINE
+// WEALTH PROJECTION CHART ENGINE (Crash-Proofed)
 function initChart(data, target, annualSavings, method) {
     const ctx = document.getElementById('growthChart').getContext('2d');
     if (growthChart) growthChart.destroy(); 
@@ -126,20 +136,15 @@ function initChart(data, target, annualSavings, method) {
             data: {
                 labels: labels,
                 datasets: [
-                    { label: 'Principal', data: principalData, backgroundColor: 'rgba(54, 162, 235, 0.7)', fill: true, stack: 'combined' },
-                    { label: 'Returns', data: returnsData, backgroundColor: 'rgba(40, 167, 69, 0.7)', fill: true, stack: 'combined' }
+                    { label: 'Principal', data: principalData, backgroundColor: 'rgba(54, 162, 235, 0.7)', fill: true, stack: 'money' },
+                    { label: 'Returns', data: returnsData, backgroundColor: 'rgba(40, 167, 69, 0.7)', fill: true, stack: 'money' },
+                    // Crash-Proof Native Target Line
+                    { label: 'FIRE Target', data: Array(maxAge - currentAge + 1).fill(target), borderColor: 'red', borderDash: [6, 6], borderWidth: 2, fill: false, pointRadius: 0, stack: 'targetLine' }
                 ]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                scales: { y: { stacked: true, ticks: { callback: (v) => '₱' + v.toLocaleString() } } },
-                plugins: {
-                    annotation: {
-                        annotations: {
-                            line1: { type: 'line', yMin: target, yMax: target, borderColor: 'red', borderDash: [6, 6], borderWidth: 2 }
-                        }
-                    }
-                }
+                scales: { y: { stacked: true, ticks: { callback: (v) => '₱' + v.toLocaleString() } } }
             }
         });
 
@@ -181,9 +186,9 @@ function initChart(data, target, annualSavings, method) {
             }
         }
 
+        // Native Target Line for Monte Carlo
         datasets.push({
-            label: 'FIRE Target',
-            data: Array(maxAge - currentAge + 1).fill(target),
+            label: 'FIRE Target', data: Array(maxAge - currentAge + 1).fill(target),
             borderColor: '#333', borderDash: [5, 5], borderWidth: 2, fill: false, pointRadius: 0
         });
 
@@ -207,36 +212,50 @@ function initChart(data, target, annualSavings, method) {
 // ARCHIVE MANAGEMENT (Database Sync)
 async function updateDatabase() {
     const income = parseFloat(document.getElementById('liveIncome').value);
-    const expenses = parseFloat(document.getElementById('liveSpending').value);
+    const expenses = parseFloat(document.getElementById('liveSpending').value); // Monthly
     const returns = parseFloat(document.getElementById('liveReturn').value);
     const swr = parseFloat(document.getElementById('liveSWR').value);
+    const netWorth = parseFloat(document.getElementById('liveNetWorth').value);
     const target = (parseFloat(document.getElementById('liveRetireSpending').value) / (swr / 100));
-    const sRate = ((income - expenses) / income * 100);
+    
+    const sRate = income > 0 ? ((income - expenses) / income * 100) : 0;
 
     const snapshot = {
         userId, income, expenses, returns, swr, target,
         sRate: parseFloat(sRate.toFixed(1))
     };
 
+    const coreProfileUpdate = {
+        current_savings: netWorth,
+        annual_expenses: expenses * 12, 
+        savings_rate: parseFloat(sRate.toFixed(1)),
+        investment_return_rate: returns,
+        fire_multiplier: (100 / swr) 
+    };
+
     try {
-        const response = await fetch('http://localhost:5000/api/save-strategy', {
+        await fetch('http://localhost:5000/api/save-strategy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(snapshot)
         });
 
+        const response = await fetch(`http://localhost:5000/api/update-user/${userId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(coreProfileUpdate)
+        });
+
         if (response.ok) {
-            alert("Entry Saved to Archive!");
+            alert("Strategy Archived and Core Profile Updated!");
             loadStrategyHistory(); 
         } else {
-            alert("Database Error: Is the PostgreSQL table created?");
+            alert("Database Error: Could not update core profile.");
         }
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+        console.error("Sync Error:", err); 
+    }
 }
-
-window.logSnapshot = async function() {
-    updateDatabase();
-};
 
 async function loadStrategyHistory() {
     try {
@@ -246,20 +265,29 @@ async function loadStrategyHistory() {
         
         document.getElementById('snapshotCount').innerText = `${logs.length} snapshots recorded`;
 
-        const tableBody = document.getElementById('historyLogBody');
+        const tableBody = document.getElementById('strategyLogBody');
         if (!tableBody) return; 
 
-        tableBody.innerHTML = logs.map(log => `
+        // Safety Parsing Map
+        tableBody.innerHTML = logs.map(log => {
+            const date = log.snapshot_date ? new Date(log.snapshot_date).toLocaleDateString() : 'N/A';
+            const income = log.monthly_income ? parseFloat(log.monthly_income).toLocaleString() : '0';
+            const sRate = log.savings_rate || 0;
+            const rRate = log.expected_return || 0;
+            const target = log.fire_target ? parseFloat(log.fire_target).toLocaleString() : '0';
+            
+            return `
             <tr>
-                <td>${new Date(log.snapshot_date).toLocaleDateString()}</td>
-                <td>₱${parseFloat(log.monthly_income).toLocaleString()}</td>
-                <td>${log.expected_return}%</td>
-                <td>₱${parseFloat(log.fire_target).toLocaleString()}</td>
+                <td>${date}</td>
+                <td>₱${income}</td>
+                <td>${sRate}%</td>
+                <td>${rRate}%</td>
+                <td>₱${target}</td>
                 <td>
-                    <button onclick="deleteStrategy(${log.snapshot_id})" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Delete</button>
+                    <button onclick="deleteStrategy(${log.snapshot_id})" class="delete-btn">Delete</button>
                 </td>
-            </tr>
-        `).join('');
+            </tr>`;
+        }).join('');
     } catch(err) { console.error("History fetch error:", err); }
 }
 
