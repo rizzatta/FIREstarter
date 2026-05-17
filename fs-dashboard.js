@@ -210,19 +210,21 @@ function initChart(data, target, annualSavings, method) {
 }
 
 // ARCHIVE MANAGEMENT (Database Sync)
-async function updateDatabase() {
-    const income = parseFloat(document.getElementById('liveIncome').value);
-    const expenses = parseFloat(document.getElementById('liveSpending').value); // Monthly
-    const returns = parseFloat(document.getElementById('liveReturn').value);
-    const swr = parseFloat(document.getElementById('liveSWR').value);
-    const netWorth = parseFloat(document.getElementById('liveNetWorth').value);
-    const target = (parseFloat(document.getElementById('liveRetireSpending').value) / (swr / 100));
-    
+async function updateDatabase() {   
+    const income = parseFloat(document.getElementById('liveIncome').value) || 0;
+    const expenses = parseFloat(document.getElementById('liveSpending').value) || 0; 
+    const returns = parseFloat(document.getElementById('liveReturn').value) || 0;
+    const swr = parseFloat(document.getElementById('liveSWR').value) || 4;
+    const netWorth = parseFloat(document.getElementById('liveNetWorth').value) || 0;
+    const retireSpending = parseFloat(document.getElementById('liveRetireSpending').value) || 0;
+    const volatility = parseFloat(document.getElementById('liveVolatility').value) || 15;
+    const target = retireSpending > 0 ? (retireSpending / (swr / 100)) : 0;
     const sRate = income > 0 ? ((income - expenses) / income * 100) : 0;
 
     const snapshot = {
         userId, income, expenses, returns, swr, target,
-        sRate: parseFloat(sRate.toFixed(1))
+        sRate: parseFloat(sRate.toFixed(1)),
+        netWorth, retireSpending, volatility
     };
 
     const coreProfileUpdate = {
@@ -252,9 +254,7 @@ async function updateDatabase() {
         } else {
             alert("Database Error: Could not update core profile.");
         }
-    } catch (err) { 
-        console.error("Sync Error:", err); 
-    }
+    } catch (err) { console.error("Sync Error:", err); }
 }
 
 async function loadStrategyHistory() {
