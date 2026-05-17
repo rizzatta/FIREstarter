@@ -169,5 +169,73 @@ app.delete('/api/delete-snapshot/:snapshotId', async (req, res) => {
     }
 });
 
+// LOG A STRATEGY SNAPSHOT 
+app.post('/api/save-strategy', async (req, res) => {
+    const { userId, income, expenses, returns, swr, target, sRate, netWorth, retireSpending, volatility } = req.body;
+    try {
+        await pool.query(
+            `INSERT INTO strategy_snapshots (
+                user_id, monthly_income, monthly_expenses, expected_return, 
+                swr_rate, fire_target, savings_rate, current_net_worth, 
+                ideal_retire_spending, volatility
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+            [userId, income, expenses, returns, swr, target, sRate, netWorth, retireSpending, volatility]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Database Write Error" });
+    }
+});
+
+// FETCH FULL STRATEGY HISTORY 
+app.get('/api/strategy-history/:userId', async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const history = await pool.query(
+            "SELECT * FROM strategy_snapshots WHERE user_id = $1 ORDER BY snapshot_date DESC",
+            [userId]
+        );
+        res.json(history.rows);
+    } catch (err) {
+        res.status(500).json({ error: "Fetch Failed" });
+    }
+});
+
+// DELETE STRATEGY SNAPSHOT
+app.delete('/api/strategy/:snapshotId', async (req, res) => {
+    const { snapshotId } = req.params;
+    try {
+        await pool.query("DELETE FROM strategy_snapshots WHERE snapshot_id = $1", [snapshotId]);
+        res.json({ success: true, message: "Snapshot Deleted" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Delete failed" });
+    }
+});
+
+// UPDATE MAIN USER PROFILE 
+app.put('/api/update-user/:userId', async (req, res) => {
+    const { userId } = req.params;
+    const { current_savings, annual_expenses, savings_rate, investment_return_rate, fire_multiplier } = req.body;
+
+    try {
+        await pool.query(
+            `UPDATE users 
+             SET current_savings = $1, 
+                 annual_expenses = $2, 
+                 savings_rate = $3, 
+                 investment_return_rate = $4, 
+                 fire_multiplier = $5
+             WHERE user_id = $6`,
+            [current_savings, annual_expenses, savings_rate, investment_return_rate, fire_multiplier, userId]
+        );
+        res.json({ success: true, message: "Core profile overwritten." });
+    } catch (err) {
+        console.error("Profile Update Error:", err);
+        res.status(500).json({ error: "Failed to update core profile." });
+    }
+});
+
 // START SERVER (ONE TIME ONLY)
 app.listen(5000, () => console.log('FIREstarter API running on port 5000'));
