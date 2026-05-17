@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FIREstarter | Dashboard</title>
     <link rel="stylesheet" href="fs-dashboard.css">
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -29,7 +30,7 @@
             <div class="stat-card orange-border">
                 <h3>FIRE Target</h3>
                 <p class="big-num" id="fireTargetDisplay">₱0</p>
-                <span class="sub-text">Target Milestone</span>
+                <span class="sub-text" id="fireTypeDisplay">Target Milestone</span>
             </div>
             <div class="stat-card">
                 <h3>Current Net Worth</h3>
@@ -43,6 +44,7 @@
                 <div class="param-item">Target SWR: <b id="statSWR">4%</b></div>
             </div>
         </div>
+        
         <section class="wide-card">
             <h3>Progress to FIRE</h3>
             <div class="progress-wrapper">
@@ -122,6 +124,7 @@
                             <th>Savings Rate</th>
                             <th>Exp. Return</th>
                             <th>FIRE Target</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="strategyLogBody">
