@@ -268,20 +268,26 @@ async function loadStrategyHistory() {
         const tableBody = document.getElementById('strategyLogBody');
         if (!tableBody) return; 
 
-        // Safety Parsing Map
         tableBody.innerHTML = logs.map(log => {
             const date = log.snapshot_date ? new Date(log.snapshot_date).toLocaleDateString() : 'N/A';
+            const netWorth = log.current_net_worth ? parseFloat(log.current_net_worth).toLocaleString() : '0';
             const income = log.monthly_income ? parseFloat(log.monthly_income).toLocaleString() : '0';
-            const sRate = log.savings_rate || 0;
+            const spending = log.monthly_expenses ? parseFloat(log.monthly_expenses).toLocaleString() : '0';
+            const retire = log.ideal_retire_spending ? parseFloat(log.ideal_retire_spending).toLocaleString() : '0';
             const rRate = log.expected_return || 0;
+            const vol = log.volatility || 15;
+            const swr = log.swr_rate || 4;
             const target = log.fire_target ? parseFloat(log.fire_target).toLocaleString() : '0';
             
             return `
             <tr>
                 <td>${date}</td>
+                <td>₱${netWorth}</td>
                 <td>₱${income}</td>
-                <td>${sRate}%</td>
-                <td>${rRate}%</td>
+                <td>₱${spending}</td>
+                <td>₱${retire}</td>
+                <td>${rRate}% / ${vol}%</td>
+                <td>${swr}%</td>
                 <td>₱${target}</td>
                 <td>
                     <button onclick="deleteStrategy(${log.snapshot_id})" class="delete-btn">Delete</button>
@@ -307,6 +313,32 @@ async function deleteStrategy(snapshotId) {
     } catch (err) {
         console.error("Delete error:", err);
     }
+}
+
+// CSV DATA EXPORT
+function exportToCSV() {
+    const table = document.querySelector('.history-table');
+    let csvContent = "data:text/csv;charset=utf-8, \uFEFF";
+
+    const userName = document.getElementById('welcomeName').innerText;
+    
+    for (let row of table.rows) {
+        let rowData = [];
+        for (let cell of row.cells) {
+            if (cell.innerText !== 'Delete' && !cell.querySelector('button')) {
+                rowData.push('"' + cell.innerText.replace(/"/g, '""') + '"');
+            }
+        }
+        csvContent += rowData.join(",") + "\n";
+    }
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `FIREstarter_Archive_${userName.replace(/\s+/g, '_')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 // GLOBAL ACTIONS
