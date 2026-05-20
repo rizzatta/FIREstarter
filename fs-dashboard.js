@@ -218,6 +218,10 @@ async function updateDatabase() {
     const volatility = parseFloat(document.getElementById('liveVolatility').value) || 15;
     const target = retireSpending > 0 ? (retireSpending / (swr / 100)) : 0;
     const sRate = income > 0 ? ((income - expenses) / income * 100) : 0;
+    const expHousing = parseFloat(document.getElementById('expHousing').value) || 0;
+    const expFood = parseFloat(document.getElementById('expFood').value) || 0;
+    const expFun = parseFloat(document.getElementById('expFun').value) || 0;
+    const expSavings = parseFloat(document.getElementById('expSavings').value) || 0;
 
     const snapshot = {
         userId, income, expenses, returns, swr, target,
@@ -354,11 +358,9 @@ function updateDonut() {
     const fun = parseFloat(document.getElementById('expFun').value) || 0;
     const savings = parseFloat(document.getElementById('expSavings').value) || 0;
 
-    // Automatically sync total spending with your main calculator
     const totalSpending = housing + food + fun;
     document.getElementById('liveSpending').value = totalSpending;
     
-    // Only re-run liveUpdate if the main calculator is fully loaded
     if (document.getElementById('liveIncome').value > 0) {
         liveUpdate(); 
     }
