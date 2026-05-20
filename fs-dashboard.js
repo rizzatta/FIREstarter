@@ -138,7 +138,6 @@ function initChart(data, target, annualSavings, method) {
                 datasets: [
                     { label: 'Principal', data: principalData, backgroundColor: 'rgba(54, 162, 235, 0.7)', fill: true, stack: 'money' },
                     { label: 'Returns', data: returnsData, backgroundColor: 'rgba(40, 167, 69, 0.7)', fill: true, stack: 'money' },
-                    // Crash-Proof Native Target Line
                     { label: 'FIRE Target', data: Array(maxAge - currentAge + 1).fill(target), borderColor: 'red', borderDash: [6, 6], borderWidth: 2, fill: false, pointRadius: 0, stack: 'targetLine' }
                 ]
             },
@@ -186,7 +185,6 @@ function initChart(data, target, annualSavings, method) {
             }
         }
 
-        // Native Target Line for Monte Carlo
         datasets.push({
             label: 'FIRE Target', data: Array(maxAge - currentAge + 1).fill(target),
             borderColor: '#333', borderDash: [5, 5], borderWidth: 2, fill: false, pointRadius: 0
@@ -249,12 +247,18 @@ async function updateDatabase() {
         });
 
         if (response.ok) {
-            alert("Strategy Archived and Core Profile Updated!");
+            alert("Strategy Archived and Core Profile Updated.");
             loadStrategyHistory(); 
         } else {
             alert("Database Error: Could not update core profile.");
         }
     } catch (err) { console.error("Sync Error:", err); }
+
+    fetch('http://localhost:5000/api/audit-log', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, action: "User updated their FIRE Archive parameters" })
+});
 }
 
 async function loadStrategyHistory() {
@@ -340,6 +344,49 @@ function exportToCSV() {
     link.click();
     document.body.removeChild(link);
 }
+
+// EXPENSE DONUT CHART
+let donutChart = null;
+
+function updateDonut() {
+    const housing = parseFloat(document.getElementById('expHousing').value) || 0;
+    const food = parseFloat(document.getElementById('expFood').value) || 0;
+    const fun = parseFloat(document.getElementById('expFun').value) || 0;
+    const savings = parseFloat(document.getElementById('expSavings').value) || 0;
+
+    // Automatically sync total spending with your main calculator
+    const totalSpending = housing + food + fun;
+    document.getElementById('liveSpending').value = totalSpending;
+    
+    // Only re-run liveUpdate if the main calculator is fully loaded
+    if (document.getElementById('liveIncome').value > 0) {
+        liveUpdate(); 
+    }
+
+    const ctx = document.getElementById('expenseDonut').getContext('2d');
+    if (donutChart) donutChart.destroy();
+
+    donutChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Housing', 'Food', 'Lifestyle', 'Savings'],
+            datasets: [{
+                data: [housing, food, fun, savings],
+                backgroundColor: ['#FF8C00', '#FFB74D', '#FFD54F', '#28A745'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(updateDonut, 500); 
+});
 
 // GLOBAL ACTIONS
 window.logout = function() {
