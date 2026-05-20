@@ -215,22 +215,17 @@ app.delete('/api/strategy/:snapshotId', async (req, res) => {
 // UPDATE MAIN USER PROFILE 
 app.put('/api/update-user/:userId', async (req, res) => {
     const { userId } = req.params;
-    const { current_savings, annual_expenses, savings_rate, investment_return_rate, fire_multiplier } = req.body;
-
+    const { current_savings, annual_expenses, savings_rate, investment_return_rate, fire_multiplier, expHousing, expFood, expFun, expSavings } = req.body;
     try {
         await pool.query(
             `UPDATE user_profiles 
-             SET current_savings = $1, 
-                 annual_expenses = $2, 
-                 savings_rate = $3, 
-                 investment_return_rate = $4, 
-                 fire_multiplier = $5
-             WHERE user_id = $6`,
-            [current_savings, annual_expenses, savings_rate, investment_return_rate, fire_multiplier, userId]
+             SET current_savings = $1, annual_expenses = $2, savings_rate = $3, investment_return_rate = $4, 
+                 fire_multiplier = $5, exp_housing = $6, exp_food = $7, exp_fun = $8, exp_savings = $9
+             WHERE user_id = $10`,
+            [current_savings, annual_expenses, savings_rate, investment_return_rate, fire_multiplier, expHousing, expFood, expFun, expSavings, userId]
         );
-        res.json({ success: true, message: "Core profile overwritten." });
+        res.json({ success: true });
     } catch (err) {
-        console.error("Profile Update Error:", err);
         res.status(500).json({ error: "Failed to update core profile." });
     }
 });
