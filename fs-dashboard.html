@@ -57,6 +57,34 @@
             </div>
         </section>
 
+        <section class="wide-card" style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 300px;">
+                <h3>Monthly Expense Breakdown</h3>
+                <span class="sub-text">Categorize your spending to optimize FIRE.</span>
+                <div class="calc-grid" style="grid-template-columns: 1fr 1fr; margin-top: 15px;">
+                    <div class="calc-group">
+                        <label>Housing & Utilities</label>
+                        <input type="number" id="expHousing" value="15000" oninput="updateDonut()">
+                    </div>
+                    <div class="calc-group">
+                        <label>Food & Groceries</label>
+                        <input type="number" id="expFood" value="8000" oninput="updateDonut()">
+                    </div>
+                    <div class="calc-group">
+                        <label>Transport & Fun</label>
+                        <input type="number" id="expFun" value="7000" oninput="updateDonut()">
+                    </div>
+                    <div class="calc-group">
+                        <label>Monthly Savings</label>
+                        <input type="number" id="expSavings" value="20000" oninput="updateDonut()" style="border-color: var(--success-green);">
+                    </div>
+                </div>
+            </div>
+            <div style="width: 250px; height: 250px; margin: auto;">
+                <canvas id="expenseDonut"></canvas>
+            </div>
+        </section>
+
         <section class="wide-card calculator-panel">
             <div class="card-header-row">
                 <h3>Live Strategy Adjuster</h3>
@@ -115,6 +143,8 @@
                 <h3>Growth Archive</h3>
                 <span class="sub-text">History of Salary & Expected Returns</span>
             </div>
+            <button class="add-btn" onclick="exportToCSV()" style="background: #007bff;">⬇ Download CSV</button>
+            </div>
             <div class="table-container">
                 <table class="history-table">
                     <thead>
@@ -136,7 +166,6 @@
             </div>
         </section>
     </main>
-
     <script src="fs-dashboard.js"></script>
 </body>
 </html>
