@@ -221,7 +221,7 @@ app.put('/api/update-user/:userId', async (req, res) => {
 
     try {
         await pool.query(
-            `UPDATE users 
+            `UPDATE user_profiles 
              SET current_savings = $1, 
                  annual_expenses = $2, 
                  savings_rate = $3, 
