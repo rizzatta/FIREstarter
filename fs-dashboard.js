@@ -208,7 +208,7 @@ function initChart(data, target, annualSavings, method) {
 }
 
 // ARCHIVE MANAGEMENT (Database Sync)
-async function updateDatabase() {   
+async function updateDatabase() {
     const income = parseFloat(document.getElementById('liveIncome').value) || 0;
     const expenses = parseFloat(document.getElementById('liveSpending').value) || 0; 
     const returns = parseFloat(document.getElementById('liveReturn').value) || 0;
@@ -218,6 +218,7 @@ async function updateDatabase() {
     const volatility = parseFloat(document.getElementById('liveVolatility').value) || 15;
     const target = retireSpending > 0 ? (retireSpending / (swr / 100)) : 0;
     const sRate = income > 0 ? ((income - expenses) / income * 100) : 0;
+
     const expHousing = parseFloat(document.getElementById('expHousing').value) || 0;
     const expFood = parseFloat(document.getElementById('expFood').value) || 0;
     const expFun = parseFloat(document.getElementById('expFun').value) || 0;
@@ -226,7 +227,8 @@ async function updateDatabase() {
     const snapshot = {
         userId, income, expenses, returns, swr, target,
         sRate: parseFloat(sRate.toFixed(1)),
-        netWorth, retireSpending, volatility
+        netWorth, retireSpending, volatility, 
+        expHousing, expFood, expFun, expSavings
     };
 
     const coreProfileUpdate = {
@@ -234,7 +236,8 @@ async function updateDatabase() {
         annual_expenses: expenses * 12, 
         savings_rate: parseFloat(sRate.toFixed(1)),
         investment_return_rate: returns,
-        fire_multiplier: (100 / swr) 
+        fire_multiplier: (100 / swr),
+        expHousing, expFood, expFun, expSavings
     };
 
     try {
@@ -251,18 +254,19 @@ async function updateDatabase() {
         });
 
         if (response.ok) {
-            alert("Strategy Archived and Core Profile Updated.");
+            alert("Strategy Archived and Core Profile Updated!");
+            
+            fetch('http://localhost:5000/api/audit-log', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, action: "User updated their FIRE Archive parameters" })
+            });
+
             loadStrategyHistory(); 
         } else {
             alert("Database Error: Could not update core profile.");
         }
     } catch (err) { console.error("Sync Error:", err); }
-
-    fetch('http://localhost:5000/api/audit-log', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, action: "User updated their FIRE Archive parameters" })
-});
 }
 
 async function loadStrategyHistory() {
