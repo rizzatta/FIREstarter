@@ -171,19 +171,17 @@ app.delete('/api/delete-snapshot/:snapshotId', async (req, res) => {
 
 // LOG A STRATEGY SNAPSHOT 
 app.post('/api/save-strategy', async (req, res) => {
-    const { userId, income, expenses, returns, swr, target, sRate, netWorth, retireSpending, volatility } = req.body;
+    const { userId, income, expenses, returns, swr, target, sRate, netWorth, retireSpending, volatility, expHousing, expFood, expFun, expSavings } = req.body;
     try {
         await pool.query(
             `INSERT INTO strategy_snapshots (
-                user_id, monthly_income, monthly_expenses, expected_return, 
-                swr_rate, fire_target, savings_rate, current_net_worth, 
-                ideal_retire_spending, volatility
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-            [userId, income, expenses, returns, swr, target, sRate, netWorth, retireSpending, volatility]
+                user_id, monthly_income, monthly_expenses, expected_return, swr_rate, fire_target, savings_rate, 
+                current_net_worth, ideal_retire_spending, volatility, exp_housing, exp_food, exp_fun, exp_savings
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+            [userId, income, expenses, returns, swr, target, sRate, netWorth, retireSpending, volatility, expHousing, expFood, expFun, expSavings]
         );
         res.json({ success: true });
     } catch (err) {
-        console.error(err);
         res.status(500).json({ error: "Database Write Error" });
     }
 });
@@ -234,6 +232,20 @@ app.put('/api/update-user/:userId', async (req, res) => {
     } catch (err) {
         console.error("Profile Update Error:", err);
         res.status(500).json({ error: "Failed to update core profile." });
+    }
+});
+
+// SECURITY AUDIT LOG
+app.post('/api/audit-log', async (req, res) => {
+    const { userId, action } = req.body;
+    try {
+        await pool.query(
+            "INSERT INTO security_audit_logs (user_id, action) VALUES ($1, $2)",
+            [userId, action]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Audit log failed" });
     }
 });
 
