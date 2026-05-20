@@ -244,5 +244,34 @@ app.post('/api/audit-log', async (req, res) => {
     }
 });
 
+// SETTINGS & SECURITY ROUTES
+app.get('/api/audit-logs/:userId', async (req, res) => {
+    try {
+        const logs = await pool.query(
+            "SELECT action, log_date FROM security_audit_logs WHERE user_id = $1 ORDER BY log_date DESC LIMIT 50",
+            [req.params.userId]
+        );
+        res.json(logs.rows);
+    } catch (err) { res.status(500).json({ error: "Failed to fetch logs" }); }
+});
+
+app.put('/api/settings/username', async (req, res) => {
+    const { userId, newName } = req.body;
+    try {
+        await pool.query("UPDATE users SET first_name = $1 WHERE user_id = $2", [newName, userId]);
+        
+        await pool.query("INSERT INTO security_audit_logs (user_id, action) VALUES ($1, $2)", [userId, "Username changed to: " + newName]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Failed to update username" }); }
+});
+
+app.delete('/api/settings/account/:userId', async (req, res) => {
+    const { userId } = req.params;
+    try {
+        await pool.query("DELETE FROM users WHERE user_id = $1", [userId]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Account deletion failed" }); }
+});
+
 // START SERVER (ONE TIME ONLY)
 app.listen(5000, () => console.log('FIREstarter API running on port 5000'));
