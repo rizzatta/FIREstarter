@@ -269,13 +269,15 @@ async function updateDatabase() {
     } catch (err) { console.error("Sync Error:", err); }
 }
 
+// Strategy History 
 async function loadStrategyHistory() {
     try {
         const res = await fetch(`http://localhost:5000/api/strategy-history/${userId}`);
         if (!res.ok) return;
         const logs = await res.json();
         
-        document.getElementById('snapshotCount').innerText = `${logs.length} snapshots recorded`;
+        const countDisplay = document.getElementById('snapshotCount');
+        if (countDisplay) countDisplay.innerText = `${logs.length} snapshots recorded`;
 
         const tableBody = document.getElementById('strategyLogBody');
         if (!tableBody) return; 
@@ -284,7 +286,9 @@ async function loadStrategyHistory() {
             const date = log.snapshot_date ? new Date(log.snapshot_date).toLocaleDateString() : 'N/A';
             const netWorth = log.current_net_worth ? parseFloat(log.current_net_worth).toLocaleString() : '0';
             const income = log.monthly_income ? parseFloat(log.monthly_income).toLocaleString() : '0';
+            
             const spending = log.monthly_expenses ? parseFloat(log.monthly_expenses).toLocaleString() : '0';
+            
             const retire = log.ideal_retire_spending ? parseFloat(log.ideal_retire_spending).toLocaleString() : '0';
             const rRate = log.expected_return || 0;
             const vol = log.volatility || 15;
@@ -296,7 +300,14 @@ async function loadStrategyHistory() {
                 <td>${date}</td>
                 <td>₱${netWorth}</td>
                 <td>₱${income}</td>
+                
+                <td>₱${log.exp_housing || 0}</td>
+                <td>₱${log.exp_food || 0}</td>
+                <td>₱${log.exp_fun || 0}</td>
+                <td>₱${log.exp_savings || 0}</td>
+                
                 <td>₱${spending}</td>
+                
                 <td>₱${retire}</td>
                 <td>${rRate}% / ${vol}%</td>
                 <td>${swr}%</td>
@@ -330,7 +341,7 @@ async function deleteStrategy(snapshotId) {
 // CSV DATA EXPORT
 function exportToCSV() {
     const table = document.querySelector('.history-table');
-    let csvContent = "data:text/csv;charset=utf-8, \uFEFF";
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
 
     const userName = document.getElementById('welcomeName').innerText;
     
@@ -354,44 +365,51 @@ function exportToCSV() {
 }
 
 // EXPENSE DONUT CHART
-let donutChart = null;
-
-function updateDonut() {
-    const housing = parseFloat(document.getElementById('expHousing').value) || 0;
-    const food = parseFloat(document.getElementById('expFood').value) || 0;
-    const fun = parseFloat(document.getElementById('expFun').value) || 0;
-    const savings = parseFloat(document.getElementById('expSavings').value) || 0;
-
-    const totalSpending = housing + food + fun;
-    document.getElementById('liveSpending').value = totalSpending;
+function exportToCSV() {
+    const table = document.querySelector('.history-table');
+    let csvContent = ""; 
+    const userName = document.getElementById('welcomeName').innerText;
     
-    if (document.getElementById('liveIncome').value > 0) {
-        liveUpdate(); 
+    csvContent += `"FIREstarter Archive Owner:","${userName}"\n\n`;
+    
+    for (let row of table.rows) {
+        let rowData = [];
+        for (let cell of row.cells) {
+            if (cell.innerText !== 'Delete' && cell.innerText !== 'Actions' && !cell.querySelector('button')) {
+                rowData.push('"' + cell.innerText.replace(/"/g, '""') + '"');
+            }
+        }
+        csvContent += rowData.join(",") + "\n";
     }
 
-    const ctx = document.getElementById('expenseDonut').getContext('2d');
-    if (donutChart) donutChart.destroy();
-
-    donutChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Housing', 'Food', 'Lifestyle', 'Savings'],
-            datasets: [{
-                data: [housing, food, fun, savings],
-                backgroundColor: ['#FF8C00', '#FFB74D', '#FFD54F', '#28A745'],
-                borderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom' } }
-        }
-    });
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `FIREstarter_Archive_${userName.replace(/\s+/g, '_')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(updateDonut, 500); 
+});
+
+
+// SETTINGS DROPDOWN MENU
+function toggleSettingsMenu() {
+    const menu = document.getElementById('settingsDropdown');
+    menu.style.display = (menu.style.display === 'none' || menu.style.display === '') ? 'block' : 'none';
+}
+
+document.addEventListener('click', function(event) {
+    const menu = document.getElementById('settingsDropdown');
+    const settingsBtn = document.querySelector('.settings-btn');
+    if (menu && settingsBtn && !menu.contains(event.target) && !settingsBtn.contains(event.target)) {
+        menu.style.display = 'none';
+    }
 });
 
 // GLOBAL ACTIONS
