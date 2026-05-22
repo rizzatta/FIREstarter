@@ -14,11 +14,17 @@
             <img src="./icons/fs-logo.png" alt="Logo" class="header-logo">
             <span class="logo-text">FIRE<span>starter</span></span>
         </div>
-        <div class="user-actions">
-            <button class="settings-btn" onclick="location.href='fs-settings.html'" title="Vault Settings">
+        
+        <div class="user-actions" style="position: relative;">
+            <button class="settings-btn" onclick="toggleSettingsMenu()" title="Account Options">
                 <img src="./icons/settings.svg" alt="Settings" class="settings-icon">
             </button>
-            <button onclick="logout()" class="logout-btn">SECURE EXIT</button>
+            
+            <div id="settingsDropdown" style="display: none; position: absolute; top: 50px; right: 0; background: white; border: 1px solid #eef0f2; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 220px; z-index: 1001; overflow: hidden;">
+                <button onclick="location.href='fs-settings.html'" style="width: 100%; padding: 15px 20px; text-align: left; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-weight: 600; color: #333; font-size: 0.9rem;">Vault Settings</button>
+                <button onclick="location.href='fs-settings.html'" style="width: 100%; padding: 15px 20px; text-align: left; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-weight: 600; color: #333; font-size: 0.9rem;">Security Audit Log</button>
+                <button onclick="logout()" style="width: 100%; padding: 15px 20px; text-align: left; background: #fff0f0; border: none; cursor: pointer; font-weight: 600; color: #dc3545; font-size: 0.9rem;">Exit</button>
+            </div>
         </div>
     </header>
 
@@ -57,10 +63,15 @@
             </div>
         </section>
 
-        <section class="wide-card" style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <section class="wide-card" style="display: flex; gap: 20px; flex-wrap: wrap; border-top: 4px solid #FF8C00;">
             <div style="flex: 1; min-width: 300px;">
-                <h3>Monthly Expense Breakdown</h3>
-                <span class="sub-text">Categorize your spending to optimize FIRE.</span>
+                <div class="card-header-row">
+                    <div>
+                        <h3>Monthly Expense Breakdown</h3>
+                        <span class="sub-text">Categorize your spending to optimize FIRE.</span>
+                    </div>
+                    <button class="save-archive-btn" onclick="updateDatabase()" style="background-color: #FF8C00; color: white; border: none;">Save Expenses</button>
+                </div>
                 <div class="calc-grid" style="grid-template-columns: 1fr 1fr; margin-top: 15px;">
                     <div class="calc-group">
                         <label>Housing & Utilities</label>
@@ -144,7 +155,6 @@
                 <span class="sub-text">History of Salary & Expected Returns</span>
             </div>
             <button class="add-btn" onclick="exportToCSV()" style="background: #007bff;">⬇ Download CSV</button>
-            </div>
             <div class="table-container">
                 <table class="history-table">
                     <thead>
