@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIREstarter | Settings</title>
+    <link rel="stylesheet" href="fs-dashboard.css">
+</head>
+<body>
+    <header class="top-header">
+        <div class="logo-container" style="cursor:pointer;" onclick="location.href='fs-dashboard.html'">
+            <img src="./icons/fs-logo.png" alt="Logo" class="header-logo">
+            <span class="logo-text">FIRE<span>starter</span></span>
+        </div>
+        <button onclick="location.href='fs-dashboard.html'" class="add-btn" style="background: var(--text-dark);">← Back to Dashboard</button>
+    </header>
+
+    <main class="dashboard-container" style="max-width: 800px;">
+        <h1 class="welcome-text">Account <span>Settings</span></h1>
+        
+        <section class="wide-card">
+            <div class="card-header-row"><h3>Profile Information</h3></div>
+            <div class="calc-group" style="margin-top: 15px;">
+                <label>Change Display Name</label>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="newUsername" placeholder="Enter new name...">
+                    <button class="add-btn" onclick="updateUsername()">Save</button>
+                </div>
+            </div>
+            <div class="calc-group" style="margin-top: 15px;">
+                <label>Change Email Address</label>
+                <div style="display:flex; gap:10px;">
+                    <input type="email" placeholder="New email address..." disabled title="Feature coming soon">
+                    <button class="add-btn" style="background:#ccc; cursor:not-allowed;">Update</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="wide-card" style="border-top: 4px solid #dc3545;">
+            <h3 style="color: #dc3545;">Danger Zone</h3>
+            <p style="font-size: 0.9rem; margin-bottom: 20px;">Once you delete your account, there is no going back. Please be certain.</p>
+            <div style="display: flex; gap: 15px;">
+                <button class="add-btn" style="background: #fff; color: #dc3545; border: 1px solid #dc3545;" onclick="alert('Data export processing...')">⬇ Export All User Data</button>
+                <button class="add-btn" style="background: #dc3545;" onclick="deleteAccount()">Delete Account</button>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const userId = localStorage.getItem('activeUserId');
+        
+        async function updateUsername() {
+            const newName = document.getElementById('newUsername').value;
+            if (!newName) return;
+            await fetch('http://localhost:5000/api/settings/username', {
+                method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, newName })
+            });
+            alert("Name updated successfully!");
+        }
+
+        async function deleteAccount() {
+            if(!confirm("Are you absolutely sure? This deletes ALL archives.")) return;
+            const res = await fetch(`http://localhost:5000/api/settings/account/${userId}`, { method: 'DELETE' });
+            if(res.ok) {
+                localStorage.removeItem('activeUserId');
+                window.location.href = "fs-login.html";
+            }
+        }
+    </script>
+</body>
+</html>
