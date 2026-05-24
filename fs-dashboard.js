@@ -426,6 +426,11 @@ function toggleSettingsMenu() {
         
         const activeName = document.getElementById('welcomeName').innerText;
         document.getElementById('drawerName').innerText = activeName;
+
+        if (globalUserData && globalUserData.profile_image) {
+            const avatarDiv = document.querySelector('#settingsDrawer > div:nth-child(2) > div:first-child');
+            avatarDiv.innerHTML = `<img src="${globalUserData.profile_image}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+            avatarDiv.style.background = 'transparent';
     }
 }
 
