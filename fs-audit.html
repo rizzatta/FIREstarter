@@ -8,7 +8,8 @@
     <style>
         .audit-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         .audit-table th, .audit-table td { text-align: left; padding: 16px; border-bottom: 1px solid var(--border-color); }
-        .audit-table th { background: #f8f9fa; color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 0.8rem; }
+        .audit-table th { background: #f8f9fa; color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 0.8rem; border-radius: 8px 8px 0 0; }
+        .status-badge { background: #e6f4ea; color: #1e8e3e; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.5px; }
     </style>
 </head>
 <body>
@@ -22,14 +23,26 @@
 
     <main class="dashboard-container">
         <h1 class="welcome-text">Security <span>Audit Log</span></h1>
+        
         <section class="wide-card">
             <div class="card-header-row">
-                <h3>System Events & Tracking</h3>
+                <div>
+                    <h3>System Events & Tracking</h3>
+                    <span class="sub-text">A log of your recent account activity.</span>
+                </div>
             </div>
-            <div style="max-height: 600px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
+            
+            <div style="margin-top: 20px; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;">
                 <table class="audit-table">
-                    <thead><tr><th>Timestamp</th><th>Action Performed</th><th>Status</th></tr></thead>
-                    <tbody id="auditLogBody"></tbody>
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Action Performed</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditLogBody">
+                        </tbody>
                 </table>
             </div>
         </section>
@@ -37,16 +50,28 @@
 
     <script>
         const userId = localStorage.getItem('activeUserId');
+        if (!userId) window.location.href = "fs-login.html";
+
         document.addEventListener('DOMContentLoaded', async () => {
-            const res = await fetch(`http://localhost:5000/api/audit-logs/${userId}`);
-            const logs = await res.json();
-            document.getElementById('auditLogBody').innerHTML = logs.map(log => `
-                <tr>
-                    <td style="color:#666; font-family: monospace;">${new Date(log.log_date).toLocaleString()}</td>
-                    <td style="font-weight:600; color: #333;">${log.action}</td>
-                    <td><span style="background: #e6f4ea; color: #1e8e3e; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 700;">SUCCESS</span></td>
-                </tr>
-            `).join('');
+            try {
+                const res = await fetch(`http://localhost:5000/api/audit-logs/${userId}`);
+                const logs = await res.json();
+                
+                if (logs.length === 0) {
+                    document.getElementById('auditLogBody').innerHTML = `<tr><td colspan="3" style="text-align:center; padding:30px; color:#888;">No recent activity found.</td></tr>`;
+                    return;
+                }
+
+                document.getElementById('auditLogBody').innerHTML = logs.map(log => `
+                    <tr>
+                        <td style="color:#666; font-family: monospace;">${new Date(log.log_date).toLocaleString()}</td>
+                        <td style="font-weight:600; color: #333;">${log.action}</td>
+                        <td><span class="status-badge">SUCCESS</span></td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error("Log fetch failed");
+            }
         });
     </script>
 </body>
