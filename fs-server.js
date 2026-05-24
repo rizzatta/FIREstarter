@@ -4,7 +4,8 @@ const bcrypt = require('bcryptjs');
 const cors = require('cors');
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors());
 
 const pool = new Pool({
@@ -267,10 +268,30 @@ app.put('/api/settings/username', async (req, res) => {
 
 app.delete('/api/settings/account/:userId', async (req, res) => {
     const { userId } = req.params;
+    const { password } = req.body; 
+
     try {
+        const userQuery = await pool.query("SELECT password_hash FROM users WHERE user_id = $1", [userId]);
+        if (userQuery.rows.length === 0) return res.status(404).json({ error: "User not found." });
+
+        const isValid = await bcrypt.compare(password, userQuery.rows[0].password_hash);
+        if (!isValid) return res.status(401).json({ error: "Incorrect password." });
+
         await pool.query("DELETE FROM users WHERE user_id = $1", [userId]);
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: "Account deletion failed" }); }
+});
+
+// UPDATE PROFILE PHOTO
+app.put('/api/settings/photo', async (req, res) => {
+    const { userId, photoData } = req.body;
+    try {
+        await pool.query("UPDATE users SET profile_image = $1 WHERE user_id = $2", [photoData, userId]);
+        
+        await pool.query("INSERT INTO security_audit_logs (user_id, action) VALUES ($1, $2)", [userId, "Updated profile photo"]);
+        
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: "Failed to update photo" }); }
 });
 
 // START SERVER (ONE TIME ONLY)
