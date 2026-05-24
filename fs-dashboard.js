@@ -40,6 +40,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         loadStrategyHistory();
         liveUpdate();
+
+        setTimeout(updateDonut, 500);
+        
     } catch (err) {
         console.error("Archive Access Denied:", err);
     }
@@ -338,44 +341,18 @@ async function deleteStrategy(snapshotId) {
     }
 }
 
-// CSV DATA EXPORT
-function exportToCSV() {
-    const table = document.querySelector('.history-table');
-    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-
-    const userName = document.getElementById('welcomeName').innerText;
-    
-    for (let row of table.rows) {
-        let rowData = [];
-        for (let cell of row.cells) {
-            if (cell.innerText !== 'Delete' && !cell.querySelector('button')) {
-                rowData.push('"' + cell.innerText.replace(/"/g, '""') + '"');
-            }
-        }
-        csvContent += rowData.join(",") + "\n";
-    }
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `FIREstarter_Archive_${userName.replace(/\s+/g, '_')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-// EXPENSE DONUT CHART
+// CSV DATA EXPORT 
 function exportToCSV() {
     const table = document.querySelector('.history-table');
     let csvContent = ""; 
+
     const userName = document.getElementById('welcomeName').innerText;
-    
     csvContent += `"FIREstarter Archive Owner:","${userName}"\n\n`;
     
     for (let row of table.rows) {
         let rowData = [];
         for (let cell of row.cells) {
-            if (cell.innerText !== 'Delete' && cell.innerText !== 'Actions' && !cell.querySelector('button')) {
+            if (cell.innerText !== 'Delete' && !cell.querySelector('button')) {
                 rowData.push('"' + cell.innerText.replace(/"/g, '""') + '"');
             }
         }
@@ -393,24 +370,64 @@ function exportToCSV() {
     document.body.removeChild(link);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(updateDonut, 500); 
-});
+// EXPENSE DONUT CHART
+let donutChart = null;
 
+function updateDonut() {
+    const housing = parseFloat(document.getElementById('expHousing').value) || 0;
+    const food = parseFloat(document.getElementById('expFood').value) || 0;
+    const fun = parseFloat(document.getElementById('expFun').value) || 0;
+    const savings = parseFloat(document.getElementById('expSavings').value) || 0;
 
-// SETTINGS DROPDOWN MENU
-function toggleSettingsMenu() {
-    const menu = document.getElementById('settingsDropdown');
-    menu.style.display = (menu.style.display === 'none' || menu.style.display === '') ? 'block' : 'none';
+    const totalSpending = housing + food + fun;
+    const liveSpendingInput = document.getElementById('liveSpending');
+    
+    if (liveSpendingInput && parseFloat(liveSpendingInput.value) !== totalSpending) {
+        liveSpendingInput.value = totalSpending;
+        if (document.getElementById('liveIncome').value > 0) {
+            liveUpdate(); 
+        }
+    }
+
+    const ctx = document.getElementById('expenseDonut').getContext('2d');
+    if (donutChart) donutChart.destroy();
+
+    donutChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Housing', 'Food', 'Lifestyle', 'Savings'],
+            datasets: [{
+                data: [housing, food, fun, savings],
+                backgroundColor: ['#FF8C00', '#FFB74D', '#FFD54F', '#28A745'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
 }
 
-document.addEventListener('click', function(event) {
-    const menu = document.getElementById('settingsDropdown');
-    const settingsBtn = document.querySelector('.settings-btn');
-    if (menu && settingsBtn && !menu.contains(event.target) && !settingsBtn.contains(event.target)) {
-        menu.style.display = 'none';
+// SIDE DRAWER MENU LOGIC 
+function toggleSettingsMenu() {
+    const drawer = document.getElementById('settingsDrawer');
+    const overlay = document.getElementById('drawerOverlay');
+    
+    if (!drawer || !overlay) return alert("Drawer HTML missing!");
+
+    if (drawer.style.right === '0px') {
+        drawer.style.right = '-400px';
+        overlay.style.display = 'none';
+    } else {
+        drawer.style.right = '0px';
+        overlay.style.display = 'block';
+        
+        const activeName = document.getElementById('welcomeName').innerText;
+        document.getElementById('drawerName').innerText = activeName;
     }
-});
+}
 
 // GLOBAL ACTIONS
 window.logout = function() {
